@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1bc916b6-a554-4733-8950-0aba21caf716",
+    "type": "cron",
+    "message": "[SYSTEM: All apps connected. Execute this task now: \"Read my emails every day at 9am and summarize\".]",
+    "cron": "0 9 * * *",
+    "description": "Daily task",
+    "active": true,
+    "runCount": 0,
+    "createdAt": 1773763480504
+  },
+  {
+    "id": "e9afc4c8-3c76-49fe-b0b6-baf3f44229ba",
+    "type": "cron",
+    "message": "[SYSTEM: All apps connected. Execute this task now: \"Read my emails every day at 9am and summarize\".]",
+    "cron": "0 9 * * *",
+    "description": "Daily task",
+    "active": true,
+    "runCount": 0,
+    "createdAt": 1773763480511
+  }
+]

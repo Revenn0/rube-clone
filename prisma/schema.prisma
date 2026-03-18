@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String    @unique
+  name          String?
+  imageUrl      String?
+  plan          String    @default("free")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  connections   AppConnection[]
+  workflows     Workflow[]
+  executions    WorkflowExecution[]
+  chatSessions  ChatSession[]
+  auditLogs     AuditLog[]
+  orgMemberships OrgMember[]
+}
+
+model Organization {
+  id          String    @id @default(cuid())
+  clerkOrgId  String    @unique
+  name        String
+  slug        String    @unique
+  plan        String    @default("team")
+  maxSeats    Int       @default(5)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  members     OrgMember[]
+}
+
+model OrgMember {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+
+  org       Organization @relation(fields: [orgId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+
+  @@unique([orgId, userId])
+}
+
+model AppConnection {
+  id              String    @id @default(cuid())
+  userId          String
+  appId           String
+  composioId      String?
+  status          String    @default("connecting")
+  accessToken     String?   @db.Text
+  refreshToken    String?   @db.Text
+  tokenExpiresAt  DateTime?
+  metadata        Json?
+  connectedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, appId])
+}
+
+model Workflow {
+  id            String    @id @default(cuid())
+  userId        String
+  orgId         String?
+  name          String
+  description   String?
+  apps          String[]
+  trigger       Json
+  actions       Json
+  status        String    @default("active")
+  lastRunAt     DateTime?
+  nextRunAt     DateTime?
+  runCount      Int       @default(0)
+  autoDelete    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id])
+  executions    WorkflowExecution[]
+}
+
+model WorkflowExecution {
+  id          String    @id @default(cuid())
+  workflowId  String
+  userId      String
+  status      String    @default("running")
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  input       Json?
+  output      Json?
+  error       String?
+  duration    Int?
+
+  workflow    Workflow  @relation(fields: [workflowId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model ChatSession {
+  id          String    @id @default(cuid())
+  userId      String
+  projectId   String    @default("general")
+  title       String
+  messageCount Int      @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id])
+  messages    ChatMessage[]
+}
+
+model ChatMessage {
+  id        String    @id @default(cuid())
+  sessionId String
+  role      String
+  content   String    @db.Text
+  metadata  Json?
+  createdAt DateTime  @default(now())
+
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  userId    String
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+}

@@ -1,0 +1,334 @@
+
+=== 2026-03-17 21:48:41 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+❌ Database: Connection failed
+✅ Disk: 44% used
+📊 Memory: 40% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 21:49:12 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 40% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 21:50:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 42% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 21:55:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 43% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:00:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 44% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:05:01 ===
+❌ Server: DOWN (attempting restart...)
+🔄 Server: Restarting...
+❌ /api/sessions: 000
+❌ /api/chat: 000
+❌ /api/workflows: 000
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 36% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:10:01 ===
+❌ Server: DOWN (attempting restart...)
+🔄 Server: Restarting...
+❌ /api/sessions: 000
+❌ /api/chat: 000
+❌ /api/workflows: 000
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 33% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:15:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 40% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:20:01 ===
+❌ Server: DOWN (attempting restart...)
+🔄 Server: Restarting...
+❌ /api/sessions: 000
+❌ /api/chat: 000
+❌ /api/workflows: 000
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 33% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:25:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 45% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:30:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 45% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:35:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 46% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:40:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 40% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:45:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 41% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:50:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 41% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 22:55:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 41% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:00:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 41% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:05:02 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 42% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:10:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 40% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:15:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 41% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:20:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 44% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:25:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 40% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:30:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 43% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:35:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 43% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:40:01 ===
+❌ Server: DOWN (attempting restart...)
+🔄 Server: Restarting...
+❌ /api/sessions: 000
+❌ /api/chat: 000
+❌ /api/workflows: 000
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 33% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:45:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 43% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:50:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 41% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-17 23:55:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 42% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-18 00:00:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 42% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-18 00:05:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 401
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 58% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
