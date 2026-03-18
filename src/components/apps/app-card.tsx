@@ -60,7 +60,7 @@ export function AppCard({ app }: AppCardProps) {
             </div>
           ) : (
             <Button
-              variant="accent"
+              variant="default"
               size="sm"
               className="w-full"
               onClick={() => connectApp(app.id)}

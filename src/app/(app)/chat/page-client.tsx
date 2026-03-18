@@ -1,10 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Bot, User, Loader2, Paperclip, ArrowUp, ExternalLink, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useChatStore } from '@/lib/chat-store';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  connectLinks?: Array<{ app: string; url: string; connected?: boolean }>;
+}
 
 interface ConnectLink {
   app: string;
@@ -42,54 +48,50 @@ function extractConnectLinks(text: string): { clean: string; links: ConnectLink[
 export function ChatInterface() {
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const initDone = useRef(false);
 
-  const {
-    sessionId, messages, isLoading, initialized,
-    setSessionId, addMessage, updateMessage, setLoading, setInitialized, clearMessages,
-  } = useChatStore();
-
-  // Initialize from DB on first load
+  // Init once
   useEffect(() => {
-    if (initialized) return;
-    setInitialized(true);
-    const init = async () => {
-      try {
-        const urlSessionId = searchParams.get('session');
-        const res = await fetch('/api/sessions');
-        const data = await res.json();
+    if (initDone.current) return;
+    initDone.current = true;
+
+    const urlSessionId = searchParams.get('session');
+    
+    // Load existing session or use URL param
+    fetch('/api/sessions')
+      .then(r => r.json())
+      .then(data => {
         if (data.sessions?.length > 0) {
           const target = urlSessionId
             ? data.sessions.find((s: { id: string }) => s.id === urlSessionId) || data.sessions[0]
             : data.sessions[0];
           setSessionId(target.id);
-          const msgRes = await fetch(`/api/chat?sessionId=${target.id}`);
-          const msgData = await msgRes.json();
-          if (msgData.messages?.length > 0) {
-            clearMessages();
-            setSessionId(target.id);
-            msgData.messages.forEach((m: { id: string; role: string; content: string }) => {
-              addMessage({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content });
-            });
-          }
+          // Load messages for this session
+          return fetch(`/api/chat?sessionId=${target.id}`).then(r => r.json());
         }
-      } catch (err) { console.error(err); }
-    };
-    init();
-  }, [initialized]);
+      })
+      .then(data => {
+        if (data?.messages?.length > 0) {
+          setMessages(data.messages.map((m: { id: string; role: string; content: string }) => ({
+            id: m.id, role: m.role as 'user' | 'assistant', content: m.content,
+          })));
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Store input in ref to avoid re-renders
-  const inputRef2 = useRef<HTMLInputElement>(null);
-  const getInput = () => inputRef2.current?.value || '';
-  const setInput = (v: string) => { if (inputRef2.current) inputRef2.current.value = v; };
-
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
 
+    // Create session if needed
     let sid = sessionId;
     if (!sid) {
       try {
@@ -100,14 +102,14 @@ export function ChatInterface() {
         });
         const data = await res.json();
         sid = data.session?.id;
-        setSessionId(sid!);
+        setSessionId(sid);
       } catch (err) { console.error(err); return; }
     }
 
     const userMsg = { id: genId(), role: 'user' as const, content: text };
-    addMessage(userMsg);
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
-    setLoading(true);
+    setIsLoading(true);
 
     try {
       const res = await fetch('/api/chat', {
@@ -119,13 +121,17 @@ export function ChatInterface() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        setMessages(prev => [...prev, { id: genId(), role: 'assistant', content: `Error: ${res.status}. Please sign in first.` }]);
+        setIsLoading(false);
+        return;
+      }
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let content = '';
-      const assistantMsg = { id: genId(), role: 'assistant' as const, content: '' };
-      addMessage(assistantMsg);
+      const assistantId = genId();
+      setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
 
       if (reader) {
         while (true) {
@@ -133,31 +139,33 @@ export function ChatInterface() {
           if (done) break;
           content += decoder.decode(value, { stream: true });
           const { clean, links } = extractConnectLinks(content);
-          updateMessage(assistantMsg.id, { content: clean, connectLinks: links.length > 0 ? links : undefined });
+          setMessages(prev => prev.map(m =>
+            m.id === assistantId ? { ...m, content: clean, connectLinks: links.length > 0 ? links : undefined } : m
+          ));
         }
       }
     } catch (err) {
       console.error(err);
-      addMessage({ id: genId(), role: 'assistant', content: 'Sorry, something went wrong.' });
+      setMessages(prev => [...prev, { id: genId(), role: 'assistant', content: 'Something went wrong.' }]);
     } finally {
-      setLoading(false);
-      inputRef2.current?.focus();
+      setIsLoading(false);
     }
   }, [sessionId, messages, isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(getInput());
+    sendMessage(input);
   };
 
   const handleConnected = useCallback((msgId: string, linkIdx: number) => {
-    const msg = messages.find(m => m.id === msgId);
-    if (!msg?.connectLinks) return;
-    const newLinks = [...msg.connectLinks];
-    newLinks[linkIdx] = { ...newLinks[linkIdx], connected: true };
-    updateMessage(msgId, { connectLinks: newLinks });
+    setMessages(prev => prev.map(m => {
+      if (m.id !== msgId || !m.connectLinks) return m;
+      const newLinks = [...m.connectLinks];
+      newLinks[linkIdx] = { ...newLinks[linkIdx], connected: true };
+      return { ...m, connectLinks: newLinks };
+    }));
     setTimeout(() => sendMessage("I've connected it, please continue."), 500);
-  }, [messages, sendMessage]);
+  }, []);
 
   return (
     <div className="flex h-full flex-col">
@@ -198,12 +206,10 @@ export function ChatInterface() {
                 {message.connectLinks && message.connectLinks.length > 0 && (
                   <div className="ml-10 sm:ml-11 mt-3 space-y-2">
                     {message.connectLinks.map((link, idx) => (
-                      <div key={idx} className={cn('flex items-center justify-between rounded-xl border p-3 transition-all',
-                        link.connected ? 'border-green-200 bg-green-50' : 'border-[#e5e7eb] bg-white hover:border-[#f26522]')}>
+                      <div key={idx} className={cn('flex items-center justify-between rounded-xl border p-3',
+                        link.connected ? 'border-green-200 bg-green-50' : 'border-[#e5e7eb] bg-white')}>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f26522]/10 text-lg">
-                            {link.app.toLowerCase().includes('gmail') ? '📧' : link.app.toLowerCase().includes('calendar') ? '📅' : link.app.toLowerCase().includes('github') ? '🐙' : '🔗'}
-                          </div>
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f26522]/10 text-lg">🔗</div>
                           <div>
                             <p className="text-sm font-medium text-[#0a0a0a]">{link.app}</p>
                             <p className="text-xs text-[#9ca3af]">{link.connected ? 'Connected!' : 'Click to connect'}</p>
@@ -213,7 +219,7 @@ export function ChatInterface() {
                           <span className="flex items-center gap-1 text-green-600 text-sm"><Check className="h-4 w-4" /> Connected</span>
                         ) : (
                           <a href={link.url} target="_blank" rel="noopener noreferrer" onClick={() => handleConnected(message.id, idx)}
-                            className="flex items-center gap-1.5 rounded-lg bg-[#f26522] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#e55a1d] no-underline">
+                            className="flex items-center gap-1.5 rounded-lg bg-[#f26522] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#e55a1d]">
                             <ExternalLink className="h-3 w-3" /> Connect
                           </a>
                         )}
@@ -239,20 +245,20 @@ export function ChatInterface() {
       <div className="border-t border-[#e5e7eb] bg-white safe-area-bottom">
         <form onSubmit={handleSubmit} className="mx-auto max-w-2xl px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-[#e5e7eb] bg-white px-2.5 sm:px-3 py-2 focus-within:border-[#d1d5db] focus-within:shadow-sm transition-all">
-            <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9ca3af] active:bg-[#f3f4f6] hover:bg-[#f3f4f6] transition-colors shrink-0">
+            <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] shrink-0">
               <Paperclip className="h-4 w-4" />
             </button>
             <input
-              ref={inputRef2}
-              defaultValue=""
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything..."
               className="flex-1 bg-transparent text-[15px] sm:text-sm text-[#0a0a0a] placeholder:text-[#9ca3af] focus:outline-none min-w-0"
               disabled={isLoading}
             />
             <button
               type="submit"
-              disabled={isLoading}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0a0a0a] text-white active:bg-[#1a1a1a] disabled:opacity-40 transition-colors shrink-0"
+              disabled={isLoading || !input.trim()}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0a0a0a] text-white disabled:opacity-40 transition-colors shrink-0"
             >
               <ArrowUp className="h-4 w-4" />
             </button>

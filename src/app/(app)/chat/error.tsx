@@ -19,7 +19,7 @@ export default function Error({
       <p className="text-sm text-[#6b7280] mb-6 text-center max-w-sm">
         {error.message || 'An unexpected error occurred'}
       </p>
-      <Button onClick={reset} variant="accent" size="sm">
+      <Button onClick={reset} variant="default" size="sm">
         <RefreshCw className="h-4 w-4 mr-2" />
         Try again
       </Button>

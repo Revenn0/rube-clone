@@ -31,7 +31,7 @@ export const useChatStore = create<ChatState>()(
       isLoading: false,
       initialized: false,
 
-      setSessionId: (id) => set({ sessionId: id }),
+      setSessionId: (id) => set({ sessionId: id, messages: [] }),
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
       updateMessage: (id, updates) =>
         set((s) => ({
@@ -41,6 +41,9 @@ export const useChatStore = create<ChatState>()(
       setInitialized: (init) => set({ initialized: init }),
       clearMessages: () => set({ messages: [], sessionId: null, initialized: false }),
     }),
-    { name: 'rube-chat-state' }
+    {
+      name: 'rube-chat-state',
+      partialize: (state) => ({ sessionId: state.sessionId, initialized: state.initialized }),
+    }
   )
 );
