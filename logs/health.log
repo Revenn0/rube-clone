@@ -399,3 +399,25 @@
 📊 Memory: 45% used
 📊 DB Stats: Users= Sessions= Workflows=
 ✅ Health check complete
+
+=== 2026-03-18 00:40:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 200
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 46% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete
+
+=== 2026-03-18 00:45:01 ===
+✅ Server: UP
+✅ /api/sessions: 200
+✅ /api/chat: 200
+❌ /api/workflows: 404
+✅ Database: Connected
+✅ Disk: 44% used
+📊 Memory: 46% used
+📊 DB Stats: Users= Sessions= Workflows=
+✅ Health check complete

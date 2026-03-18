@@ -29,19 +29,31 @@ const genId = () => Math.random().toString(36).slice(2) + Date.now().toString(36
 
 function extractConnectLinks(text: string): { clean: string; links: ConnectLink[] } {
   const links: ConnectLink[] = [];
-  const linkRegex = /\[Connect\s+(\w+[\s\w]*)\]\((https?:\/\/connect\.composio\.dev\/[^\)]+)\)/gi;
-  const urlRegex = /(https?:\/\/connect\.composio\.dev\/\S+)/gi;
-  let clean = text;
+  
+  // Extract [CONNECT]...[ENDCONNECT] markers
+  const connectRegex = /\[CONNECT\](.*?)\[ENDCONNECT\]/gi;
   let match;
+  while ((match = connectRegex.exec(text)) !== null) {
+    links.push({ app: 'app', url: match[1] });
+  }
+  
+  // Also extract markdown links
+  const linkRegex = /\[Connect\s+(\w+[\s\w]*)\]\((https?:\/\/connect\.composio\.dev\/[^\)]+)\)/gi;
   while ((match = linkRegex.exec(text)) !== null) {
     links.push({ app: match[1].trim(), url: match[2] });
   }
+  
+  const urlRegex = /(https?:\/\/connect\.composio\.dev\/\S+)/gi;
   if (links.length === 0) {
     while ((match = urlRegex.exec(text)) !== null) {
       links.push({ app: 'app', url: match[1] });
     }
   }
-  clean = text.replace(/\[Connect\s+[\w\s]+\]\(https?:\/\/[^\)]+\)/gi, '').trim();
+  
+  let clean = text;
+  clean = clean.replace(/\[CONNECT\].*?\[ENDCONNECT\]/gi, '').trim();
+  clean = clean.replace(/\[Connect\s+[\w\s]+\]\(https?:\/\/[^\)]+\)/gi, '').trim();
+  
   return { clean, links };
 }
 
@@ -122,7 +134,11 @@ export function ChatInterface() {
       });
 
       if (!res.ok) {
-        setMessages(prev => [...prev, { id: genId(), role: 'assistant', content: `Error: ${res.status}. Please sign in first.` }]);
+        let errMsg = `Error: ${res.status}`;
+        if (res.status === 401) errMsg = '⚠️ Please sign in at /sign-in first';
+        else if (res.status === 500) errMsg = '⚠️ Server error. Check API keys in /settings';
+        else if (res.status === 429) errMsg = '⚠️ Rate limited. Wait a moment.';
+        setMessages(prev => [...prev, { id: genId(), role: 'assistant', content: errMsg }]);
         setIsLoading(false);
         return;
       }
