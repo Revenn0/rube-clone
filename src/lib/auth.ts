@@ -1,19 +1,29 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 
-// Auto-create user if doesn't exist
+// Auto-create user if doesn't exist (usa upsert para evitar race e unique constraint)
 export async function getOrCreateUser() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  let user = await prisma.user.findUnique({ where: { clerkId: userId } });
-  if (!user) {
-    user = await prisma.user.create({
-      data: { clerkId: userId, email: '' },
-    });
-  }
-  return user;
+  const clerkUser = await currentUser();
+  const email =
+    clerkUser?.emailAddresses?.[0]?.emailAddress || `${userId}@clerk.user`;
+  const name =
+    [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') ||
+    null;
+
+  return prisma.user.upsert({
+    where: { clerkId: userId },
+    update: { email, name, imageUrl: clerkUser?.imageUrl ?? undefined },
+    create: {
+      clerkId: userId,
+      email,
+      name,
+      imageUrl: clerkUser?.imageUrl,
+    },
+  });
 }
 
 // Call in protected pages

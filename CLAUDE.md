@@ -32,21 +32,17 @@ import { prisma } from '@/lib/db';
 const user = await prisma.user.findUnique({ where: { clerkId: userId } });
 ```
 
-### Composio MCP calls
+### Composio SDK (v3)
 ```typescript
-const res = await fetch(COMPOSIO_MCP_URL, {
-  method: 'POST',
-  headers: {
-    'x-api-key': COMPOSIO_API_KEY!,
-    'Content-Type': 'application/json',
-    'Accept': 'application/json, text/event-stream',
-  },
-  body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: {...} }),
-});
-const text = await res.text();
-for (const line of text.split('\n')) {
-  if (line.startsWith('data: ')) return JSON.parse(line.slice(6));
-}
+import { Composio } from '@composio/core';
+import { VercelProvider } from '@composio/vercel';
+
+const composio = new Composio({ provider: new VercelProvider() });
+const session = await composio.create(userId);  // userId = Clerk userId
+const tools = await session.tools();
+// Pass tools to streamText for chat
+// session.authorize(toolkit) for OAuth
+// composio.connectedAccounts.delete(id) for disconnect
 ```
 
 ### AI Chat streaming

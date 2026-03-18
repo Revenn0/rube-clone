@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
+import { getOrCreateUser } from '@/lib/auth';
 
 const COMPOSIO_API_KEY = process.env.COMPOSIO_API_KEY;
 const COMPOSIO_BASE = 'https://backend.composio.dev/api/v2';
@@ -31,15 +32,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  const user = await getOrCreateUser();
   if (!user) {
-    // Create user on first connection
-    user = await prisma.user.create({
-      data: {
-        clerkId: userId,
-        email: '',
-      },
-    });
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
   const { appId } = await req.json();
@@ -102,12 +97,7 @@ export async function POST(req: Request) {
 
 // GET /api/composio - List connected apps
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  const user = await getOrCreateUser();
   if (!user) {
     return NextResponse.json({ connections: [] });
   }
@@ -122,14 +112,9 @@ export async function GET() {
 
 // DELETE /api/composio?appId=xxx - Disconnect app
 export async function DELETE(req: Request) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  const user = await getOrCreateUser();
   if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);

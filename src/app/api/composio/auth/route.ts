@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
+import { getOrCreateUser } from '@/lib/auth';
 
 const COMPOSIO_API_KEY = process.env.COMPOSIO_API_KEY;
 const COMPOSIO_MCP_URL = process.env.COMPOSIO_MCP_URL;
@@ -27,14 +27,12 @@ async function mcpCall(name: string, args: Record<string, unknown>) {
 
 // POST - Get OAuth link for an app
 export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  let user = await prisma.user.findUnique({ where: { clerkId: userId } });
-  if (!user) user = await prisma.user.create({ data: { clerkId: userId, email: '' } });
+  const user = await getOrCreateUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { appId } = await req.json();
-  const mcpSessionId = `user_${user.id}_${Date.now()}`;
+  // Composio requires Clerk userId to scope connections
+  const mcpSessionId = user.clerkId;
 
   const result = await mcpCall('COMPOSIO_MANAGE_CONNECTIONS', {
     toolkits: [appId],
@@ -78,10 +76,7 @@ export async function POST(req: Request) {
 
 // GET - List connections or check status
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ connections: [] });
-
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  const user = await getOrCreateUser();
   if (!user) return NextResponse.json({ connections: [] });
 
   const connections = await prisma.appConnection.findMany({

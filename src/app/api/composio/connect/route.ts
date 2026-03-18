@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { getOrCreateUser } from '@/lib/auth';
 
 const COMPOSIO_API_KEY = process.env.COMPOSIO_API_KEY;
 const COMPOSIO_BASE = 'https://backend.composio.dev/api/v2';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 // Map our app IDs to Composio app IDs
 const APP_ID_MAP: Record<string, string> = {
@@ -19,6 +21,11 @@ const APP_ID_MAP: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
+  const user = await getOrCreateUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { appId } = await req.json();
 
   if (!appId) {
@@ -37,7 +44,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         appName: composioAppId,
-        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings?connected=${appId}`,
+        redirectUrl: `${APP_URL}/api/composio/callback?appId=${appId}&userId=${user.id}`,
       }),
     });
 
@@ -65,6 +72,11 @@ export async function POST(req: Request) {
 
 // Check connection status
 export async function GET(req: Request) {
+  const user = await getOrCreateUser();
+  if (!user) {
+    return NextResponse.json({ connected: false });
+  }
+
   const { searchParams } = new URL(req.url);
   const appId = searchParams.get('appId');
 

@@ -53,9 +53,12 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         throw new Error(`${action.app} not connected`);
       }
 
+      // Composio requires Clerk userId to scope tool execution to user's connections
+      const clerkUserId = workflow.user.clerkId;
+
       await mcpCall('COMPOSIO_MULTI_EXECUTE_TOOL', {
         tools: [{ tool_slug: action.action, arguments: action.params || {} }],
-        session_id: `exec_${workflow.userId}_${Date.now()}`,
+        session_id: clerkUserId,
       });
     }
 

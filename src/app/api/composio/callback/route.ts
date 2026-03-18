@@ -8,21 +8,25 @@ export async function GET(req: Request) {
   const userId = searchParams.get('userId');
   const status = searchParams.get('status');
   const connected = searchParams.get('connected');
+  const connectedAccountId = searchParams.get('connected_account_id');
+
+  const isSuccess = status === 'success' || connected === 'true';
 
   if (appId && userId) {
-    // Update connection status in DB
     try {
       await prisma.appConnection.upsert({
         where: { userId_appId: { userId, appId } },
         update: {
-          status: status === 'success' || connected === 'true' ? 'active' : 'error',
-          connectedAt: new Date(),
+          status: isSuccess ? 'active' : 'error',
+          connectedAt: isSuccess ? new Date() : undefined,
+          composioId: connectedAccountId || undefined,
         },
         create: {
           userId,
           appId,
-          status: 'active',
-          connectedAt: new Date(),
+          status: isSuccess ? 'active' : 'error',
+          connectedAt: isSuccess ? new Date() : undefined,
+          composioId: connectedAccountId || undefined,
         },
       });
     } catch (err) {
@@ -30,7 +34,12 @@ export async function GET(req: Request) {
     }
   }
 
-  // Redirect back to chat
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  return NextResponse.redirect(`${appUrl}/chat?connected=${appId || 'unknown'}`);
+  const sessionId = req.headers.get('cookie')?.match(/rube_pendingSession=([^;]+)/)?.[1];
+  const chatUrl = sessionId
+    ? `${appUrl}/chat?connected=${appId || 'unknown'}&session=${encodeURIComponent(sessionId)}`
+    : `${appUrl}/chat?connected=${appId || 'unknown'}`;
+  const res = NextResponse.redirect(chatUrl);
+  res.headers.append('Set-Cookie', 'rube_pendingSession=; path=/; max-age=0');
+  return res;
 }

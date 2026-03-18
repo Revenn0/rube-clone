@@ -5,3 +5,10 @@ node_modules/
 dist/
 .turbo/
 data/
+
+# Windows reserved names (evita erro Turbopack)
+nul
+nul.*
+con
+con.*
+.vercel

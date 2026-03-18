@@ -1,5 +1,22 @@
 import { App } from '@/types';
 
+export const TOOL_COUNT: Record<string, number> = {
+  gmail: 60,
+  slack: 47,
+  github: 866,
+  notion: 47,
+  google_calendar: 32,
+  linear: 28,
+  twitter: 24,
+  stripe: 45,
+  youtube: 51,
+  discord: 18,
+  airtable: 35,
+  resend: 12,
+  google_sheets: 42,
+  teams: 38,
+};
+
 export const APPS: App[] = [
   {
     id: 'gmail',

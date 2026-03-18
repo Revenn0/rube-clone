@@ -49,16 +49,16 @@ export function AppConnectCards({ apps, schedule, originalMessage, onComplete }:
     setConnecting(app.id);
 
     try {
-      const res = await fetch('/api/composio/connect', {
+      const res = await fetch('/api/composio/connections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appId: app.id }),
+        body: JSON.stringify({ toolkit: app.id }),
       });
 
       const data = await res.json();
 
-      if (data.url) {
-        const popup = window.open(data.url, 'composio-connect', 'width=600,height=700');
+      if (data.redirectUrl) {
+        const popup = window.open(data.redirectUrl, 'composio-connect', 'width=600,height=700');
 
         const checkInterval = setInterval(() => {
           try {
