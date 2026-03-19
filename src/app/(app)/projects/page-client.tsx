@@ -252,7 +252,7 @@ export default function ProjectsPageClient() {
                 >
                   <Plus className="h-3 w-3" /> New Chat
                 </button>
-              </div>
+              </motion.div>
             ))}
           </div>
           )}
