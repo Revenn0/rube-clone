@@ -379,13 +379,9 @@ export function ChatInterface() {
                     className={cn(
                       'max-w-[85%] sm:max-w-[78%] text-sm leading-relaxed',
                       message.role === 'user'
-                        ? 'rounded-2xl rounded-tr-sm px-4 py-2.5 text-white'
+                        ? 'rounded-2xl rounded-tr-sm px-4 py-2.5 text-foreground bg-card border border-border/60 shadow-sm'
                         : 'py-1'
                     )}
-                    style={message.role === 'user' ? {
-                      background: 'linear-gradient(135deg, #f26522 0%, #e55a1d 100%)',
-                      boxShadow: '0 2px 12px rgba(242,101,34,0.25)'
-                    } : undefined}
                   >
                     {message.parts
                       .filter((p) => p.type === 'text')

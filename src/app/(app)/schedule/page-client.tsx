@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/lib/toast';
 
+import { motion, AnimatePresence } from 'framer-motion';
+
 interface ScheduledTask {
   id: string;
   name: string;
@@ -319,25 +321,25 @@ export default function SchedulePageClient() {
               <div
                 key={task.id}
                 onClick={() => handleEdit(task)}
-                className="rounded-xl border border-border bg-card p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-brand/30 hover:bg-card-hover transition-colors"
+                className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-5 flex items-center justify-between gap-4 cursor-pointer hover:border-brand/30 hover:shadow-lg transition-all duration-300 group"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">{task.name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{task.prompt}</p>
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <p className="text-base font-bold text-foreground mb-1 group-hover:text-brand transition-colors">{task.name}</p>
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed font-medium line-clamp-2">{task.prompt}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-brand mt-3 flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-md bg-brand/10 border border-brand/20">
                     <Repeat className="h-3 w-3" /> {SCHEDULE_LABELS[cronToSchedule(task.schedule)] ?? task.schedule} at {task.time}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-col items-end gap-3 shrink-0">
                   <span className={cn(
-                    'text-xs font-medium px-2 py-1 rounded-full',
-                    task.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
+                    'text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border',
+                    task.status === 'active' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' : 'bg-muted/50 text-muted-foreground border-border/50'
                   )}>
                     {task.status}
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteRequest(task.id); }}
-                    className="p-2 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
+                    className="p-2.5 rounded-xl bg-background/50 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-all shadow-sm border border-border/50 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0"
                     title="Delete schedule"
                     aria-label="Delete schedule"
                   >
@@ -354,7 +356,7 @@ export default function SchedulePageClient() {
         <AlertDialogContent className="max-w-sm rounded-3xl border-red-500/20 shadow-2xl bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold text-red-600 dark:text-red-400">Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription className="text-foreground/80 font-medium">
+            <AlertDialogDescription className="text-foreground/80 font-medium pt-2">
               This action cannot be undone. The scheduled task will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>

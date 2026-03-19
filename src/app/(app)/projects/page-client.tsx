@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/lib/toast';
 
+import { motion } from 'framer-motion';
+
 interface Project {
   id: string;
   name: string;
@@ -133,7 +135,13 @@ export default function ProjectsPageClient() {
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           {showNewForm && (
-            <form onSubmit={handleCreateProject} className="mb-8 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 shadow-lg animate-in slide-in-from-top-4 fade-in duration-300">
+            <motion.form 
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              onSubmit={handleCreateProject} 
+              className="mb-8 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 shadow-lg"
+            >
               <h3 className="text-base font-bold mb-4">Create New Project</h3>
               <input
                 type="text"
@@ -151,12 +159,17 @@ export default function ProjectsPageClient() {
                   Cancel
                 </button>
               </div>
-            </form>
+            </motion.form>
           )}
 
           {projects.length === 0 &&
           (!sessionsByProject.general || sessionsByProject.general.length === 0) ? (
-            <div className="py-20 flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              className="py-20 flex flex-col items-center justify-center text-center"
+            >
               <div className="h-24 w-24 bg-brand/10 rounded-3xl flex items-center justify-center mb-6">
                 <Folder className="h-10 w-10 text-brand" />
               </div>
@@ -165,11 +178,16 @@ export default function ProjectsPageClient() {
               <button onClick={() => setShowNewForm(true)} className="rounded-xl bg-brand px-6 py-3 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all shadow-md shadow-brand/20 flex items-center gap-2">
                 <Plus className="h-4 w-4" /> Create First Project
               </button>
-            </div>
+            </motion.div>
           ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max">
             {/* General Project Card */}
-            <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition-all flex flex-col">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.05 }}
+              className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
+            >
               <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border/50">
                 <div className="w-4 h-4 rounded-full shrink-0 bg-neutral-500" />
                 <h3 className="text-base font-bold text-foreground tracking-tight">General</h3>
@@ -195,11 +213,17 @@ export default function ProjectsPageClient() {
               >
                 <Plus className="h-3 w-3" /> New Chat
               </button>
-            </div>
+            </motion.div>
 
             {/* Dynamic Project Cards */}
-            {projects.map((proj) => (
-              <div key={proj.id} className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition-all flex flex-col">
+            {projects.map((proj, i) => (
+              <motion.div 
+                key={proj.id} 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25, delay: (i + 2) * 0.05 }}
+                className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
+              >
                 <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border/50">
                   <div
                     className="w-4 h-4 rounded-full shrink-0 shadow-sm"
