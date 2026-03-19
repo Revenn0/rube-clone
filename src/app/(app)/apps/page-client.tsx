@@ -479,7 +479,7 @@ export default function AppsPageClient() {
             <div className="py-12 text-center text-sm text-muted-foreground">No apps match your search</div>
           )
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {filteredApps.map((app, index) => {
               const connected = app.isConnected;
               const isConnecting = connecting === app.id;
@@ -487,12 +487,11 @@ export default function AppsPageClient() {
                 <div
                   key={app.connectedAccountId ? `${app.id}-${app.connectedAccountId}` : `${app.id}-${index}`}
                   className={cn(
-                    'app-card group flex flex-col items-center rounded-xl border p-4 transition-all cursor-pointer',
+                    'group relative flex flex-col items-center rounded-2xl border p-5 transition-all duration-300 cursor-pointer overflow-hidden',
                     connected
-                      ? 'border-green-400/60 bg-green-50/80 dark:bg-green-950/30 dark:border-green-700/50'
-                      : 'border-border bg-card hover:border-brand/30'
+                      ? 'border-green-400/60 bg-green-50/80 dark:bg-green-950/20 dark:border-green-700/50 shadow-[0_4px_20px_rgba(34,197,94,0.1)]'
+                      : 'border-border/60 bg-card/60 backdrop-blur-md hover:border-brand/50 hover:shadow-lg'
                   )}
-                  style={connected ? { boxShadow: '0 0 0 2px rgba(34,197,94,0.2)' } : { boxShadow: 'var(--shadow-xs)' }}
                   onClick={() => {
                     if (app.authorizeUnsupported) {
                       addToast('This app does not support browser connection. It may still work from chat.', 'info');
@@ -501,44 +500,55 @@ export default function AppsPageClient() {
                     if (!connected) handleConnect(app.id);
                   }}
                 >
-                  <AppIcon appId={app.id} className="h-14 w-14 mb-3" showCheck={connected} logo={app.logo || undefined} />
-                  <span className="text-sm font-semibold text-foreground text-center leading-tight">{app.name}</span>
-                  {connected ? (
-                    <span className="mt-1 text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400">
-                      ● Connected
-                    </span>
-                  ) : app.tools_count > 0 ? (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <Wrench className="h-3 w-3" /> {app.tools_count} tools
-                    </span>
-                  ) : null}
-                  <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
-                    {connected ? (
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/apps/${app.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs font-medium text-foreground hover:text-brand transition-colors"
-                        >
-                          Manage
-                        </Link>
-                        <span className="text-muted-foreground/40">·</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDisconnect(app.id, app.connectedAccountId); }}
-                          className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
-                        >
-                          Disconnect
-                        </button>
-                      </div>
-                    ) : isConnecting ? (
-                      <span className="flex items-center gap-1.5 text-xs text-brand font-medium">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Connecting...
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground/70 group-hover:text-brand transition-colors">
-                        Click to connect
-                      </span>
-                    )}
+                  {/* Spotlight hover effect (CSS only via group-hover opacity) */}
+                  {!connected && (
+                    <div className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_at_top,_rgba(242,101,34,0.15)_0%,_transparent_70%)]" />
+                  )}
+                  
+                  <div className="relative z-10 flex flex-col items-center w-full">
+                    <AppIcon appId={app.id} className="h-16 w-16 mb-4 drop-shadow-md transition-transform duration-300 group-hover:scale-110" showCheck={connected} logo={app.logo || undefined} />
+                    <span className="text-sm font-bold text-foreground text-center leading-tight tracking-wide">{app.name}</span>
+                    
+                    <div className="h-10 flex items-center justify-center mt-1 w-full">
+                      {connected ? (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-green-600 dark:text-green-400 flex items-center gap-1.5 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Connected
+                        </span>
+                      ) : app.tools_count > 0 ? (
+                        <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground/80 bg-muted/50 px-2.5 py-1 rounded-full">
+                          <Wrench className="h-3 w-3" /> {app.tools_count} tools
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-3 flex flex-col items-center gap-1 w-full opacity-80 group-hover:opacity-100 transition-opacity">
+                      {connected ? (
+                        <div className="flex items-center justify-center gap-3 w-full pt-2 border-t border-border/50">
+                          <Link
+                            href={`/apps/${app.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[11px] font-bold uppercase tracking-wider text-foreground hover:text-brand transition-colors"
+                          >
+                            Manage
+                          </Link>
+                          <span className="w-1 h-1 rounded-full bg-border" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDisconnect(app.id, app.connectedAccountId); }}
+                            className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            Disconnect
+                          </button>
+                        </div>
+                      ) : isConnecting ? (
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-brand">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Connecting...
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 group-hover:text-brand transition-colors">
+                          Click to connect
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

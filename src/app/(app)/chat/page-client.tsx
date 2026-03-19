@@ -314,29 +314,33 @@ export function ChatInterface() {
       >
         {messages.length === 0 && !isLoading ? (
           <div className="flex h-full flex-col items-center justify-center px-5 sm:px-6 py-8">
-            <div className="flex items-center justify-center h-12 w-12 rounded-2xl mb-5" style={{ background: 'linear-gradient(135deg, #f26522 0%, #ff8a50 100%)', boxShadow: '0 8px 24px rgba(242,101,34,0.3)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+            <div className="flex items-center justify-center h-16 w-16 rounded-3xl mb-8 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand to-[#ff8a50] opacity-90 transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay" />
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-white relative z-10 drop-shadow-md">
                 <path d="M12 2L13.8 8.2L20 10L13.8 11.8L12 18L10.2 11.8L4 10L10.2 8.2L12 2Z" fill="currentColor"/>
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground mb-2 text-center tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 text-center tracking-tight">
               What can I do for you?
             </h1>
-            <p className="text-sm text-muted-foreground mb-8 text-center max-w-xs">
-              Connect your apps and automate anything in natural language
+            <p className="text-base text-muted-foreground mb-12 text-center max-w-md leading-relaxed">
+              Connect your apps and automate anything in natural language. Try a suggestion below or just ask.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
               {SUGGESTIONS.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => handleSuggestion(s.text)}
-                  className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 text-left transition-all hover:border-brand/30 hover:shadow-md active:scale-[0.98]"
-                  style={{ boxShadow: 'var(--shadow-xs)' }}
+                  className="group flex flex-col items-start gap-2 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 sm:p-5 text-left transition-all duration-300 hover:border-brand/40 hover:bg-card hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-brand"
                 >
-                  <span className="text-xl shrink-0 mt-0.5">{s.icon}</span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground leading-snug">{s.text}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
+                  <div className="flex items-center gap-3 w-full">
+                    <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-background shadow-sm text-lg border border-border/50 group-hover:scale-110 transition-transform duration-300">{s.icon}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 ml-auto group-hover:text-brand/70 transition-colors">Prompt</span>
+                  </div>
+                  <div className="min-w-0 mt-1">
+                    <p className="text-sm font-semibold text-foreground leading-snug">{s.text}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">{s.desc}</p>
                   </div>
                 </button>
               ))}
@@ -525,12 +529,12 @@ export function ChatInterface() {
         </button>
       )}
 
-      <div className="border-t border-border bg-background/80 backdrop-blur-sm safe-area-bottom shrink-0">
-        <form onSubmit={handleSubmit} className="mx-auto max-w-2xl px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-border bg-card px-2.5 sm:px-3 py-2 transition-all focus-within:border-brand/50 focus-within:ring-2 focus-within:ring-brand/10" style={{ boxShadow: 'var(--shadow-sm)' }}>
+      <div className="border-t border-border/50 bg-background/60 backdrop-blur-xl safe-area-bottom shrink-0 pb-4 pt-2">
+        <form onSubmit={handleSubmit} className="mx-auto max-w-3xl px-4 sm:px-6">
+          <div className="relative flex items-center gap-2 rounded-2xl border border-border/60 bg-card/80 shadow-lg px-3 py-2 transition-all duration-300 focus-within:border-brand/50 focus-within:ring-4 focus-within:ring-brand/10 hover:border-border">
             <button
               type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
               title="Attach"
             >
               <Paperclip className="h-4 w-4" />
@@ -538,30 +542,36 @@ export function ChatInterface() {
             <button
               type="button"
               onClick={() => handleSuggestion('Hey Jungor, help me create a new automation')}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+              className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0 border border-transparent hover:border-border/50"
               title="Create Automation"
             >
               <Wand2 className="h-4 w-4" />
               <span className="hidden sm:inline">Automate</span>
             </button>
+            <div className="w-px h-6 bg-border/60 mx-1 hidden sm:block" />
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything..."
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
+              placeholder="Message Jungor..."
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-w-0 px-2 py-1.5"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-white disabled:opacity-40 transition-all shrink-0"
-              style={{ background: input.trim() ? 'linear-gradient(135deg, #f26522 0%, #e55a1d 100%)' : undefined, backgroundColor: !input.trim() ? 'var(--muted)' : undefined }}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl text-white transition-all duration-300 shrink-0",
+                input.trim() 
+                  ? "bg-foreground hover:scale-105 active:scale-95 shadow-md" 
+                  : "bg-muted text-muted-foreground opacity-50"
+              )}
+              style={input.trim() ? { background: 'linear-gradient(135deg, #f26522 0%, #e55a1d 100%)', boxShadow: '0 4px 12px rgba(242,101,34,0.3)' } : undefined}
             >
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
             </button>
           </div>
-          <p className="text-center text-[11px] text-muted-foreground/50 mt-2">
-            Jungor can make mistakes. Verify important results.
+          <p className="text-center text-[10px] text-muted-foreground/50 mt-3 font-medium tracking-wide uppercase">
+            Jungor is an AI. It can make mistakes. Verify important actions.
           </p>
         </form>
       </div>

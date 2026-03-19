@@ -351,18 +351,18 @@ export default function SchedulePageClient() {
       </div>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="max-w-sm">
+        <AlertDialogContent className="max-w-sm rounded-3xl border-red-500/20 shadow-2xl bg-card">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-xl font-bold text-red-600 dark:text-red-400">Delete schedule?</AlertDialogTitle>
+            <AlertDialogDescription className="text-foreground/80 font-medium">
               This action cannot be undone. The scheduled task will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="rounded-xl border-border/60">Cancel</AlertDialogCancel>
             <Button
               onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="rounded-xl shadow-md shadow-red-500/20 font-bold bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
             </Button>

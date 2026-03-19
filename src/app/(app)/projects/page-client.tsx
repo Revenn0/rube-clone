@@ -113,112 +113,126 @@ export default function ProjectsPageClient() {
 
   return (
     <div className="min-h-full flex flex-col">
-      <div className="border-b border-border px-4 sm:px-6 py-3 sm:py-4">
+      <div className="border-b border-border/50 bg-background/50 backdrop-blur-xl px-4 sm:px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Folder className="h-5 w-5" />
+          <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <div className="p-2 bg-brand/10 rounded-lg text-brand">
+              <Folder className="h-5 w-5" />
+            </div>
             Projects
           </h2>
           <button
             onClick={() => setShowNewForm(!showNewForm)}
-            className="flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-sm font-bold text-background hover:scale-105 active:scale-95 transition-all shadow-md"
           >
             <Plus className="h-4 w-4" /> New Project
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {showNewForm && (
-          <form onSubmit={handleCreateProject} className="mb-6 rounded-xl border border-border bg-card p-4">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Project name"
-              className="w-full rounded-lg border border-border px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-1 focus:ring-brand/30 focus:border-brand"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button type="submit" className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-hover transition-colors">
-                Create
-              </button>
-              <button type="button" onClick={() => setShowNewForm(false)} className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-card-hover transition-colors">
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-
-        {projects.length === 0 &&
-        (!sessionsByProject.general || sessionsByProject.general.length === 0) ? (
-          <EmptyState
-            icon={<Folder className="h-12 w-12" />}
-            title="No projects yet"
-            description="Create a project to organize your chats"
-            action={{ label: 'New Project', onClick: () => setShowNewForm(true) }}
-          />
-        ) : (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <h3 className="text-sm font-medium text-foreground mb-3">General</h3>
-            <div className="space-y-1">
-              {(sessionsByProject.general ?? []).map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/chat?session=${s.id}`}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-card-hover hover:text-foreground"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  {s.title}
-                </Link>
-              ))}
-              {(!sessionsByProject.general || sessionsByProject.general.length === 0) && (
-                <p className="text-xs text-muted-foreground py-2">No chats yet</p>
-              )}
-            </div>
-            <button
-              onClick={() => handleNewChat('general')}
-              className="mt-2 text-xs text-brand hover:underline"
-            >
-              + New chat
-            </button>
-          </div>
-
-          {projects.map((proj) => (
-            <div key={proj.id} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: proj.color }}
-                />
-                <h3 className="text-sm font-medium text-foreground">{proj.name}</h3>
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl mx-auto">
+          {showNewForm && (
+            <form onSubmit={handleCreateProject} className="mb-8 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 shadow-lg animate-in slide-in-from-top-4 fade-in duration-300">
+              <h3 className="text-base font-bold mb-4">Create New Project</h3>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="E.g., Marketing Automation"
+                className="w-full rounded-xl border border-border/60 bg-background px-4 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all shadow-sm"
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all shadow-md shadow-brand/20">
+                  Create Project
+                </button>
+                <button type="button" onClick={() => setShowNewForm(false)} className="rounded-xl border border-border/60 bg-card px-5 py-2.5 text-sm font-bold text-foreground hover:bg-muted transition-all">
+                  Cancel
+                </button>
               </div>
-              <div className="space-y-1">
-                {(sessionsByProject[proj.id] ?? []).map((s) => (
+            </form>
+          )}
+
+          {projects.length === 0 &&
+          (!sessionsByProject.general || sessionsByProject.general.length === 0) ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+              <div className="h-24 w-24 bg-brand/10 rounded-3xl flex items-center justify-center mb-6">
+                <Folder className="h-10 w-10 text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">No projects yet</h2>
+              <p className="text-muted-foreground mb-8 max-w-sm">Create a project to organize your chats and automations into dedicated workspaces.</p>
+              <button onClick={() => setShowNewForm(true)} className="rounded-xl bg-brand px-6 py-3 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all shadow-md shadow-brand/20 flex items-center gap-2">
+                <Plus className="h-4 w-4" /> Create First Project
+              </button>
+            </div>
+          ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* General Project Card */}
+            <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition-all flex flex-col">
+              <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border/50">
+                <div className="w-4 h-4 rounded-full shrink-0 bg-neutral-500" />
+                <h3 className="text-base font-bold text-foreground tracking-tight">General</h3>
+              </div>
+              <div className="space-y-1.5 flex-1 min-h-[100px]">
+                {(sessionsByProject.general ?? []).slice(0, 5).map((s) => (
                   <Link
                     key={s.id}
-                    href={`/chat?session=${s.id}&project=${proj.id}`}
-                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-card-hover hover:text-foreground"
+                    href={`/chat?session=${s.id}`}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground border border-transparent hover:border-border/50 transition-all group"
                   >
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    {s.title}
+                    <MessageSquare className="h-3.5 w-3.5 group-hover:text-brand transition-colors" />
+                    <span className="truncate">{s.title}</span>
                   </Link>
                 ))}
-                {(!sessionsByProject[proj.id] || sessionsByProject[proj.id].length === 0) && (
-                  <p className="text-xs text-muted-foreground py-2">No chats yet</p>
+                {(!sessionsByProject.general || sessionsByProject.general.length === 0) && (
+                  <p className="text-xs text-muted-foreground/60 py-4 text-center font-medium">No chats in this project</p>
                 )}
               </div>
               <button
-                onClick={() => handleNewChat(proj.id)}
-                className="mt-2 text-xs text-brand hover:underline"
+                onClick={() => handleNewChat('general')}
+                className="mt-4 flex items-center justify-center gap-2 w-full rounded-xl bg-brand/10 text-brand py-2.5 text-xs font-bold uppercase tracking-widest hover:bg-brand/20 transition-colors"
               >
-                + New chat
+                <Plus className="h-3 w-3" /> New Chat
               </button>
             </div>
-          ))}
+
+            {/* Dynamic Project Cards */}
+            {projects.map((proj) => (
+              <div key={proj.id} className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition-all flex flex-col">
+                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border/50">
+                  <div
+                    className="w-4 h-4 rounded-full shrink-0 shadow-sm"
+                    style={{ backgroundColor: proj.color }}
+                  />
+                  <h3 className="text-base font-bold text-foreground tracking-tight">{proj.name}</h3>
+                </div>
+                <div className="space-y-1.5 flex-1 min-h-[100px]">
+                  {(sessionsByProject[proj.id] ?? []).slice(0, 5).map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`/chat?session=${s.id}&project=${proj.id}`}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground border border-transparent hover:border-border/50 transition-all group"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5 group-hover:text-brand transition-colors" />
+                      <span className="truncate">{s.title}</span>
+                    </Link>
+                  ))}
+                  {(!sessionsByProject[proj.id] || sessionsByProject[proj.id].length === 0) && (
+                    <p className="text-xs text-muted-foreground/60 py-4 text-center font-medium">No chats in this project</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleNewChat(proj.id)}
+                  className="mt-4 flex items-center justify-center gap-2 w-full rounded-xl bg-brand/10 text-brand py-2.5 text-xs font-bold uppercase tracking-widest hover:bg-brand/20 transition-colors"
+                >
+                  <Plus className="h-3 w-3" /> New Chat
+                </button>
+              </div>
+            ))}
+          </div>
+          )}
         </div>
-        )}
       </div>
     </div>
   );

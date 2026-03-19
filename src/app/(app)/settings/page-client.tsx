@@ -113,93 +113,93 @@ export default function SettingsPageClient() {
       </div>
 
       {/* Desktop: vertical sidebar */}
-      <div className="hidden lg:block w-56 shrink-0 border-r border-border bg-card p-4">
-        <h1 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+      <div className="hidden lg:block w-64 shrink-0 border-r border-border/50 bg-card/30 p-5">
+        <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60 mb-6 flex items-center gap-2">
           <Settings className="h-4 w-4" />
           Settings
         </h1>
-        <nav className="space-y-0.5">
+        <nav className="space-y-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={cn(
-                'w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                tab === t.id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-card-hover hover:text-foreground'
+                'w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-brand',
+                tab === t.id ? 'bg-brand/10 text-brand shadow-sm' : 'text-muted-foreground hover:bg-card hover:text-foreground hover:shadow-sm'
               )}
             >
-              <t.icon className="h-4 w-4 shrink-0" />
+              <t.icon className={cn('h-4 w-4 shrink-0', tab === t.id && 'text-brand')} />
               {t.label}
             </button>
           ))}
         </nav>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-2xl">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10">
+        <div className="mx-auto max-w-3xl">
           {tab === 'account' && (
-            <div className="space-y-6">
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="text-sm font-medium text-foreground mb-4">Profile</h2>
-                <div className="flex items-center gap-4">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 sm:p-8 shadow-sm transition-all hover:shadow-md">
+                <h2 className="text-lg font-bold text-foreground mb-6">Profile</h2>
+                <div className="flex items-center gap-5">
                   {user?.imageUrl ? (
-                    <img src={user.imageUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+                    <img src={user.imageUrl} alt="" className="h-20 w-20 rounded-full object-cover ring-4 ring-background shadow-md" />
                   ) : (
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-brand to-brand-hover flex items-center justify-center text-2xl font-semibold text-white">
+                    <div className="h-20 w-20 rounded-full bg-gradient-to-br from-brand to-brand-hover flex items-center justify-center text-3xl font-bold text-white shadow-md ring-4 ring-background">
                       {user?.firstName?.[0] ?? user?.emailAddresses?.[0]?.emailAddress?.[0] ?? 'U'}
                     </div>
                   )}
                   <div>
-                    <p className="text-base font-medium text-foreground">
+                    <p className="text-xl font-bold text-foreground tracking-tight">
                       {user?.firstName} {user?.lastName}
                     </p>
-                    <p className="text-sm text-muted-foreground">{user?.emailAddresses?.[0]?.emailAddress}</p>
+                    <p className="text-sm text-muted-foreground font-medium mt-1">{user?.emailAddresses?.[0]?.emailAddress}</p>
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="text-sm font-medium text-foreground mb-4">Preferences</h2>
+              <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 sm:p-8 shadow-sm transition-all hover:shadow-md">
+                <h2 className="text-lg font-bold text-foreground mb-6">Preferences</h2>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Timezone</label>
-                  <select className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Timezone</label>
+                  <select className="w-full rounded-xl border border-border/60 bg-background px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-brand focus:border-transparent transition-all shadow-sm">
                     <option value="Europe/London">Europe/London (GMT+0)</option>
                     <option value="America/Sao_Paulo">America/São Paulo (GMT-3)</option>
                     <option value="America/New_York">America/New York (GMT-5)</option>
                     <option value="UTC">UTC</option>
                   </select>
-                  <p className="text-xs text-muted-foreground mt-1">Current time: {new Date().toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground/70 mt-2 font-medium">Current time: {new Date().toLocaleString()}</p>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="text-sm font-medium text-foreground mb-4">System</h2>
+              <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 sm:p-8 shadow-sm transition-all hover:shadow-md">
+                <h2 className="text-lg font-bold text-foreground mb-6">System</h2>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground">Need Help? Contact Support</span>
-                    <a href="mailto:support@jungor.dev" className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover transition-colors">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/50">
+                    <span className="text-sm font-medium text-foreground">Need Help? Contact Support</span>
+                    <a href="mailto:support@jungor.dev" className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all shadow-md shadow-brand/20">
                       Contact Us
                     </a>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Signed in as {user?.emailAddresses?.[0]?.emailAddress}</span>
-                    <Link href="/sign-out" className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-card-hover">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/50">
+                    <span className="text-sm font-medium text-muted-foreground">Signed in as <span className="text-foreground">{user?.emailAddresses?.[0]?.emailAddress}</span></span>
+                    <Link href="/sign-out" className="flex items-center gap-2 rounded-lg border border-border/60 bg-card px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition-all shadow-sm">
                       <LogOut className="h-3.5 w-3.5" /> Sign Out
                     </Link>
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-red-200 bg-red-50/30 p-6">
-                <h2 className="text-sm font-medium text-red-700 mb-2 flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" /> Danger Zone
+              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 sm:p-8">
+                <h2 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" /> Danger Zone
                 </h2>
-                <p className="text-xs text-muted-foreground mb-3">Permanently delete this team and all its data.</p>
-                <button className="text-sm font-medium text-red-600 hover:underline">Delete Team</button>
+                <p className="text-sm text-red-600/70 dark:text-red-400/70 mb-4 font-medium">Permanently delete this team and all its data. This action cannot be undone.</p>
+                <button className="text-sm font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-lg transition-colors border border-red-500/20">Delete Team</button>
               </div>
             </div>
           )}
 
           {tab === 'billing' && (
-            <div className="space-y-6">
-              <div className="rounded-xl border border-border bg-card p-6">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 sm:p-8 shadow-sm">
                 <h2 className="text-sm font-medium text-foreground mb-4">Monthly Usage</h2>
                 {billingLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
