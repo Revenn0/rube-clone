@@ -17,6 +17,8 @@ const config: Config = {
         muted: 'var(--muted)',
         accent: 'var(--accent)',
         'accent-hover': 'var(--accent-hover)',
+        brand: 'var(--brand)',
+        'brand-hover': 'var(--brand-hover)',
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',

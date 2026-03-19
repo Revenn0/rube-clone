@@ -40,17 +40,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center gap-2 rounded-lg px-4 py-3 shadow-lg text-sm animate-slide-up ${
-              toast.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
-              toast.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
-              'bg-white text-[#0a0a0a] border border-[#e5e7eb]'
+            className={`flex items-center gap-2 rounded-lg px-4 py-3 shadow-lg text-sm animate-slide-up border ${
+              toast.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' :
+              toast.type === 'error' ? 'bg-red-50 text-red-800 border-red-200' :
+              'bg-card text-card-foreground border-border'
             }`}
           >
-            {toast.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
-            {toast.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
-            {toast.type === 'info' && <Info className="h-4 w-4 text-blue-500" />}
-            <span>{toast.message}</span>
-            <button onClick={() => removeToast(toast.id)} className="ml-2 text-[#9ca3af] hover:text-[#0a0a0a]">
+            {toast.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />}
+            {toast.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />}
+            {toast.type === 'info' && <Info className="h-4 w-4 text-brand shrink-0" />}
+            <span className="flex-1">{toast.message}</span>
+            <button onClick={() => removeToast(toast.id)} className="ml-2 text-muted-foreground hover:text-foreground transition-colors">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>

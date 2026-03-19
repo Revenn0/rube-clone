@@ -1,17 +1,28 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
+import { getOrCreateUser } from '@/lib/auth';
 
-// GET /api/sessions - List user's chat sessions
-export async function GET() {
+// GET /api/sessions - List user's chat sessions (optional ?projectId=xxx)
+export async function GET(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ sessions: [] });
 
   const user = await prisma.user.findUnique({ where: { clerkId: userId } });
   if (!user) return NextResponse.json({ sessions: [] });
 
+  const { searchParams } = new URL(req.url);
+  const projectId = searchParams.get('projectId');
+
   const sessions = await prisma.chatSession.findMany({
-    where: { userId: user.id },
+    where: {
+      userId: user.id,
+      ...(projectId === 'general'
+        ? { projectId: null }
+        : projectId
+        ? { projectId }
+        : {}),
+    },
     orderBy: { updatedAt: 'desc' },
     take: 50,
     include: { _count: { select: { messages: true } } },
@@ -22,21 +33,26 @@ export async function GET() {
 
 // POST /api/sessions - Create new session
 export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await getOrCreateUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let user = await prisma.user.findUnique({ where: { clerkId: userId } });
-  if (!user) {
-    user = await prisma.user.create({ data: { clerkId: userId, email: '' } });
+  let body: { title?: string; projectId?: string } = {};
+  try {
+    body = (await req.json()) as { title?: string; projectId?: string };
+  } catch {
+    // body vazio ou JSON inválido
   }
 
-  const { title, projectId } = await req.json();
+  const { title, projectId } = body;
+  const validProjectId = projectId && projectId !== 'general' ? projectId : null;
 
   const session = await prisma.chatSession.create({
     data: {
-      userId: user.id,
+      user: { connect: { id: user.id } },
       title: title || 'New chat',
-      projectId: projectId || 'general',
+      ...(validProjectId
+        ? { project: { connect: { id: validProjectId } } }
+        : {}),
     },
   });
 

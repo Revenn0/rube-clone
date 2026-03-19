@@ -37,7 +37,7 @@ function AppIcon({ appId, className }: { appId: string; className?: string }) {
   return (
     <div
       className={cn(
-        'relative flex items-center justify-center rounded-2xl overflow-hidden bg-white border border-[#e5e7eb]',
+        'relative flex items-center justify-center rounded-2xl overflow-hidden bg-card border border-border',
         className
       )}
     >
@@ -118,7 +118,7 @@ export default function AppDetailClient({ slug }: { slug: string }) {
   if (loading) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#9ca3af]" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -148,7 +148,7 @@ export default function AppDetailClient({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-full flex flex-col">
-      <div className="border-b border-[#e5e7eb] px-4 sm:px-6 py-4">
+      <div className="border-b border-border px-4 sm:px-6 py-3 sm:py-4">
         <Link
           href="/apps"
           className="inline-flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#0a0a0a] mb-4"
@@ -180,14 +180,14 @@ export default function AppDetailClient({ slug }: { slug: string }) {
       <div className="flex-1 px-4 sm:px-6 py-6 space-y-6">
         {/* Stats */}
         <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-4">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-4">
             <Wrench className="h-5 w-5 text-[#9ca3af]" />
             <div>
               <p className="text-xs text-[#6b7280]">Tools</p>
               <p className="text-lg font-semibold text-[#0a0a0a]">{toolCount}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-4">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-4">
             <Check className="h-5 w-5 text-green-600" />
             <div>
               <p className="text-xs text-[#6b7280]">Connected accounts</p>
@@ -199,7 +199,7 @@ export default function AppDetailClient({ slug }: { slug: string }) {
         </div>
 
         {/* Connection Status */}
-        <div className="rounded-xl border border-[#e5e7eb] bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="text-sm font-medium text-[#0a0a0a] mb-3">Connection Status</h3>
           {connection.isConnected ? (
             <div className="flex items-center gap-2 text-green-600">
@@ -217,13 +217,13 @@ export default function AppDetailClient({ slug }: { slug: string }) {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => setEditScopesOpen(true)}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-medium text-[#0a0a0a] hover:bg-[#f9fafb]"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-[#0a0a0a] hover:bg-[#f9fafb]"
               >
                 <Settings className="h-4 w-4" /> Edit Scopes
               </button>
               <button
                 onClick={() => setImportConfigOpen(true)}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-medium text-[#0a0a0a] hover:bg-[#f9fafb]"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-[#0a0a0a] hover:bg-[#f9fafb]"
               >
                 <Download className="h-4 w-4" /> Import Config
               </button>
@@ -244,7 +244,7 @@ export default function AppDetailClient({ slug }: { slug: string }) {
 
         {/* Scopes */}
         {scopes.length > 0 && (
-          <div className="rounded-xl border border-[#e5e7eb] bg-white p-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="text-sm font-medium text-[#0a0a0a] mb-3">Scopes</h3>
             <ul className="space-y-2">
               {scopes.map((scope) => (

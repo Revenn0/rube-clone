@@ -109,7 +109,7 @@ export function AppConnectCards({ apps, schedule, originalMessage, onComplete }:
           <div
             key={app.id}
             className={`flex items-center justify-between rounded-xl border p-3 transition-all ${
-              isConnected ? 'border-green-200 bg-green-50' : 'border-[#e5e7eb] bg-white hover:border-[#d1d5db]'
+              isConnected ? 'border-green-500 bg-green-50 dark:bg-green-950/30' : 'border-border bg-card hover:border-muted-foreground/30'
             }`}
           >
             <div className="flex items-center gap-3">

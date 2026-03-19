@@ -42,7 +42,7 @@ export const useChatStore = create<ChatState>()(
       clearMessages: () => set({ messages: [], sessionId: null, initialized: false }),
     }),
     {
-      name: 'rube-chat-state',
+      name: 'jungor-chat-state',
       partialize: (state) => ({ sessionId: state.sessionId, initialized: state.initialized }),
     }
   )

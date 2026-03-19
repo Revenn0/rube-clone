@@ -25,41 +25,41 @@ export function ComposioTools() {
   }, []);
 
   return (
-    <div className="border-t border-[#e5e7eb] px-3 py-2">
+    <div className="border-t border-border px-3 py-2">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-[#6b7280] hover:bg-[#f9fafb]"
+        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-card-hover"
       >
         {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         <Wrench className="h-3.5 w-3.5" />
         <span className="text-xs font-medium">Composio Tools</span>
-        <span className="ml-auto text-xs text-[#d1d5db]">{loading ? '...' : tools.length}</span>
+        <span className="ml-auto text-xs text-muted-foreground">{loading ? '...' : tools.length}</span>
       </button>
 
       {expanded && (
         <div className="ml-4 mt-1 space-y-0.5 max-h-48 overflow-y-auto">
           {loading ? (
             <div className="flex items-center gap-2 px-2 py-1">
-              <Loader2 className="h-3 w-3 animate-spin text-[#9ca3af]" />
-              <span className="text-xs text-[#9ca3af]">Loading tools...</span>
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Loading tools...</span>
             </div>
           ) : tools.length === 0 ? (
-            <p className="text-xs text-[#d1d5db] italic px-2 py-1">No tools available</p>
+            <p className="text-xs text-muted-foreground italic px-2 py-1">No tools available</p>
           ) : (
             tools.slice(0, 15).map((tool) => (
               <div
                 key={tool.name}
-                className="group flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs text-[#6b7280] hover:bg-[#f9fafb] cursor-default"
+                className="group flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-card-hover cursor-default"
                 title={tool.description}
               >
-                <span className="font-mono text-[10px] text-[#f26522] shrink-0">
+                <span className="font-mono text-xs text-brand shrink-0">
                   {tool.name.replace('COMPOSIO_', '').slice(0, 20)}
                 </span>
               </div>
             ))
           )}
           {tools.length > 15 && (
-            <p className="text-xs text-[#d1d5db] px-2 py-1">+{tools.length - 15} more</p>
+            <p className="text-xs text-muted-foreground px-2 py-1">+{tools.length - 15} more</p>
           )}
         </div>
       )}

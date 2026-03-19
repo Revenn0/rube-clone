@@ -1,19 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Wrench, Check, Loader2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Check, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ToolOutputRenderer } from './tool-output-renderer';
+import {
+  type ToolPartForRender,
+  getAppIcon,
+  getFriendlyInfo,
+} from './tool-utils';
 
-/** Normalized tool part (static or dynamic) for rendering */
-export type ToolPartForRender = {
-  toolName: string;
-  toolCallId: string;
-  state: string;
-  input?: unknown;
-  output?: unknown;
-  errorText?: string;
-};
+export type { ToolPartForRender };
 
 interface ToolInvocationCardProps {
   part: ToolPartForRender;
@@ -22,74 +20,110 @@ interface ToolInvocationCardProps {
 export function ToolInvocationCard({ part }: ToolInvocationCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const isLoading =
-    part.state === 'input-streaming' || part.state === 'input-available';
+  const isRunning = part.state === 'input-streaming' || part.state === 'input-available';
   const isComplete = part.state === 'output-available';
   const isError = part.state === 'output-error';
 
-  const displayName = part.toolName.replace(/^COMPOSIO_/, '').replace(/_/g, ' ');
+  const icon = getAppIcon(part.toolName);
+  const friendly = getFriendlyInfo(part.toolName);
+  const statusText = isRunning ? friendly.running : isError ? friendly.error : friendly.done;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
       className={cn(
         'my-2 rounded-xl border overflow-hidden transition-colors',
         isError
-          ? 'border-red-200 bg-red-50/50'
+          ? 'border-red-200 bg-red-50/40'
           : isComplete
-            ? 'border-green-200 bg-green-50/30'
-            : 'border-[#e5e7eb] bg-[#f9fafb]'
+            ? 'border-green-200/60 bg-green-50/20'
+            : 'border-amber-200/60 bg-amber-50/20'
       )}
     >
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-black/[0.02] transition-colors"
+        className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-black/[0.02] transition-colors"
       >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#6b7280]" />
-        ) : isError ? (
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-        ) : (
-          <Check className="h-4 w-4 shrink-0 text-green-600" />
-        )}
-        <Wrench className="h-4 w-4 shrink-0 text-[#9ca3af]" />
-        <span className="flex-1 text-sm font-medium text-[#0a0a0a]">
-          {displayName}
-        </span>
-        <span className="text-xs text-[#9ca3af]">
-          {isLoading ? 'Running...' : isError ? 'Error' : 'Completed'}
-        </span>
-        {expanded ? (
-          <ChevronUp className="h-4 w-4 text-[#9ca3af]" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-[#9ca3af]" />
-        )}
-      </button>
+        <span className="text-base shrink-0">{icon}</span>
 
-      {expanded && (
-        <div className="border-t border-[#e5e7eb] px-4 py-3 space-y-3">
-          {part.input != null && Object.keys(part.input as object).length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-[#6b7280] mb-1">Arguments</p>
-              <pre className="text-xs bg-white rounded-lg p-3 border border-[#e5e7eb] overflow-x-auto max-h-40 overflow-y-auto">
-                {JSON.stringify(part.input, null, 2)}
-              </pre>
-            </div>
-          )}
-          {part.state === 'output-available' && part.output != null && (
-            <div>
-              <p className="text-xs font-medium text-[#6b7280] mb-1">Result</p>
-              <ToolOutputRenderer output={part.output} toolName={part.toolName} />
-            </div>
-          )}
-          {part.state === 'output-error' && part.errorText && (
-            <div>
-              <p className="text-xs font-medium text-red-600 mb-1">Error</p>
-              <p className="text-sm text-red-700">{part.errorText}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground truncate">{statusText}</span>
+            {isRunning && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500 shrink-0" />
+            )}
+            {isComplete && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              >
+                <Check className="h-3.5 w-3.5 text-green-500 shrink-0" />
+              </motion.div>
+            )}
+            {isError && <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+          </div>
+
+          {isRunning && (
+            <div className="mt-1.5 h-1 w-full rounded-full bg-amber-100 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-amber-400"
+                initial={{ width: '0%' }}
+                animate={{ width: ['0%', '65%', '75%', '65%'] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
             </div>
           )}
         </div>
-      )}
-    </div>
+
+        <motion.div
+          animate={{ rotate: expanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="shrink-0 text-muted-foreground"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border px-3.5 py-3 space-y-3 bg-card/60">
+              {part.input != null && Object.keys(part.input as object).length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Arguments</p>
+                  <pre className="text-xs bg-muted rounded-lg p-2.5 border border-border overflow-x-auto max-h-32 overflow-y-auto text-foreground">
+                    {JSON.stringify(part.input, null, 2)}
+                  </pre>
+                </div>
+              )}
+              {isComplete && part.output != null && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Result</p>
+                  <ToolOutputRenderer output={part.output} toolName={part.toolName} />
+                </div>
+              )}
+              {isError && part.errorText && (
+                <div>
+                  <p className="text-xs font-medium text-red-500 mb-1.5">Error</p>
+                  <p className="text-sm text-red-600 bg-red-50 rounded-lg p-2.5 border border-red-100">
+                    {part.errorText}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

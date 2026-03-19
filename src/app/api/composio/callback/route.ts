@@ -35,11 +35,11 @@ export async function GET(req: Request) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const sessionId = req.headers.get('cookie')?.match(/rube_pendingSession=([^;]+)/)?.[1];
+  const sessionId = req.headers.get('cookie')?.match(/jungor_pendingSession=([^;]+)/)?.[1];
   const chatUrl = sessionId
     ? `${appUrl}/chat?connected=${appId || 'unknown'}&session=${encodeURIComponent(sessionId)}`
     : `${appUrl}/chat?connected=${appId || 'unknown'}`;
   const res = NextResponse.redirect(chatUrl);
-  res.headers.append('Set-Cookie', 'rube_pendingSession=; path=/; max-age=0');
+  res.headers.append('Set-Cookie', 'jungor_pendingSession=; path=/; max-age=0');
   return res;
 }

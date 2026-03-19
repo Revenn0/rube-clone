@@ -33,7 +33,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             <thead className="bg-[#f3f4f6]">{children}</thead>
           ),
           tbody: ({ children }) => (
-            <tbody className="divide-y divide-[#e5e7eb] bg-white">{children}</tbody>
+            <tbody className="divide-y divide-border bg-card">{children}</tbody>
           ),
           tr: ({ children }) => (
             <tr className="hover:bg-[#f9fafb] transition-colors">{children}</tr>

@@ -3,6 +3,7 @@ import { Composio } from '@composio/core';
 import { getOrCreateUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { APPS } from '@/lib/apps';
+import { isKnownUnsupportedToolkit } from '@/lib/composio-unsupported';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -116,6 +117,14 @@ export async function POST(req: Request) {
   const origin = new URL(req.url).origin;
   const callbackUrl = `${origin}/api/composio/callback?appId=${appIdForDb}&userId=${user.id}`;
 
+  if (isKnownUnsupportedToolkit(composioSlug) || isKnownUnsupportedToolkit(toolkit)) {
+    return NextResponse.json({
+      unsupported: true,
+      error:
+        'This app does not support browser connection. It may work automatically when you use the assistant, or it may be unavailable on your Composio plan.',
+    });
+  }
+
   try {
     const session = await composio.create(user.clerkId);
     const connectionRequest = await session.authorize(composioSlug, {
@@ -136,9 +145,14 @@ export async function POST(req: Request) {
       redirectUrl: redirectUrl ?? '',
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error('Composio authorize error:', err);
     return NextResponse.json(
-      { error: 'Failed to get connection URL' },
+      {
+        error: 'Failed to get connection URL',
+        detail: process.env.NODE_ENV === 'development' ? message : undefined,
+        unsupported: false,
+      },
       { status: 500 }
     );
   }

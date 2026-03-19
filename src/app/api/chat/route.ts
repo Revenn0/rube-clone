@@ -6,6 +6,8 @@ import {
   generateId,
   tool,
   jsonSchema,
+  isToolUIPart,
+  getToolName,
   type UIMessage,
 } from 'ai';
 import { auth } from '@clerk/nextjs/server';
@@ -13,6 +15,8 @@ import { prisma } from '@/lib/db';
 import { getOrCreateUser } from '@/lib/auth';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
+import { getNextRunFromCron } from '@/lib/workflow-engine';
+import { checkUsageLimit, recordToolExecution } from '@/lib/usage';
 
 export const maxDuration = 30;
 
@@ -25,15 +29,7 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
-export const AVAILABLE_MODELS = [
-  'zai/glm-5-turbo',
-  'openai/gpt-5.4',
-  'anthropic/claude-sonnet-4.6',
-  'xai/grok-4.20-non-reasoning-beta',
-] as const;
-
-const DEFAULT_MODEL =
-  process.env.AI_GATEWAY_DEFAULT_MODEL || 'openai/gpt-5.4';
+const CHAT_MODEL = 'anthropic/claude-sonnet-4.6';
 
 function extractTextFromParts(parts: UIMessage['parts']): string {
   return parts
@@ -77,6 +73,7 @@ If the user just saved a Recipe or discussed a workflow, use that as the prompt.
             : `0 ${hour} * * *`;
 
     try {
+      const nextRunAt = getNextRunFromCron(cronExpr);
       const workflow = await prisma.workflow.create({
         data: {
           userId: user.id,
@@ -86,6 +83,7 @@ If the user just saved a Recipe or discussed a workflow, use that as the prompt.
           trigger: { type: 'schedule', cron: cronExpr, time: time || '09:00' },
           actions: [{ type: 'chat', prompt }],
           status: 'active',
+          nextRunAt,
         },
       });
       return {
@@ -106,45 +104,118 @@ If the user just saved a Recipe or discussed a workflow, use that as the prompt.
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response('Unauthorized. Please sign in.', {
+      status: 401,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
   }
 
   if (!process.env.COMPOSIO_API_KEY) {
-    return new Response(
-      JSON.stringify({ error: 'COMPOSIO_API_KEY not configured' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response('Service configuration error. Please try again later.', {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
   }
 
-  const body = await req.json();
-  const { messages, sessionId: bodySessionId, id: bodyId, model: bodyModel } = body as {
+  let body: Record<string, unknown>;
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    return new Response('Invalid request. Please try again.', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
+  const { messages, sessionId: bodySessionId, id: bodyId } = body as {
     messages: UIMessage[];
     sessionId?: string;
     id?: string;
-    model?: string;
   };
   const sessionId = bodySessionId ?? bodyId;
-  const modelToUse = bodyModel && AVAILABLE_MODELS.includes(bodyModel as (typeof AVAILABLE_MODELS)[number])
-    ? (bodyModel as (typeof AVAILABLE_MODELS)[number])
-    : DEFAULT_MODEL;
 
   if (!messages || !Array.isArray(messages)) {
-    return new Response(
-      JSON.stringify({ error: 'messages array required' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response('Invalid request. Messages are required.', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
   }
 
-  const session = await composio.create(userId);
-  const composioTools = await session.tools();
-  const tools = {
-    ...composioTools,
-    create_schedule: createScheduleTool,
-  };
+  const user = await getOrCreateUser();
+  if (!user) {
+    return new Response('Unauthorized. Please sign in.', {
+      status: 401,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
 
-  const result = streamText({
-    model: gateway(modelToUse),
-    system: `You are Rube, an AI assistant. You have access to apps via Composio tools.
+  let usageCheck: { allowed: boolean; used: number; limit: number };
+  try {
+    usageCheck = await checkUsageLimit(user.id);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isPrismaError =
+      message.includes('does not exist') ||
+      message.includes('relation') ||
+      message.includes('P2021') ||
+      message.includes('P2018');
+    console.error('Usage check error:', err);
+    if (isPrismaError) {
+      return new Response(
+        'Database schema may be outdated. Run: npx prisma migrate deploy',
+        { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+      );
+    }
+    return new Response('Service temporarily unavailable. Please try again.', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
+
+  if (!usageCheck.allowed) {
+    const msg = `Usage limit reached. You have used ${usageCheck.used} of ${usageCheck.limit} executions this month. Upgrade your plan in Settings to continue.`;
+    return new Response(msg, {
+      status: 402,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
+
+  try {
+    const session = await composio.create(userId);
+
+    let composioTools: Awaited<ReturnType<typeof session.tools>> | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const t = await session.tools();
+        const n = t && typeof t === 'object' ? Object.keys(t as object).length : 0;
+        if (n > 0) {
+          composioTools = t;
+          break;
+        }
+        console.warn(`[chat] session.tools() empty (attempt ${attempt + 1})`);
+      } catch (e) {
+        console.warn(`[chat] session.tools() failed (attempt ${attempt + 1}):`, e);
+      }
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 500));
+    }
+
+    if (!composioTools || Object.keys(composioTools as object).length === 0) {
+      return new Response(
+        'Tools are temporarily unavailable. Please check your Composio API key and try again in a moment.',
+        {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        }
+      );
+    }
+
+    const tools = {
+      ...composioTools,
+      create_schedule: createScheduleTool,
+    };
+
+    const result = streamText({
+      model: gateway(CHAT_MODEL),
+      system: `You are Jungor, an AI assistant. You have access to apps via Composio tools.
 When a tool requires authentication and the user hasn't connected yet, use COMPOSIO_MANAGE_CONNECTIONS to get a Connect Link and share it with the user.
 NEVER ask the user to type "connected" or "Google connected" after connecting. When the user says "Continue" or returns after connecting, automatically retry the task from the previous message. Resume and complete the task without asking for confirmation.
 Be concise and helpful.
@@ -157,59 +228,72 @@ When presenting structured data (lists, emails, etc.), format it as Markdown tab
 - | value1  | value2  | value3  |
 
 For data that fits well in tables, prefer tables. For short lists or summaries, use bullet points.`,
-    messages: await convertToModelMessages(messages, { tools }),
-    tools,
-    stopWhen: stepCountIs(10),
-  });
+      messages: await convertToModelMessages(messages, { tools }),
+      tools,
+      stopWhen: stepCountIs(10),
+    });
 
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    generateMessageId: () => generateId(),
-    onFinish: async ({ messages: updatedMessages, responseMessage, isAborted }) => {
-      if (isAborted || !sessionId) return;
+    return result.toUIMessageStreamResponse({
+      originalMessages: messages,
+      generateMessageId: () => generateId(),
+      onFinish: async ({ messages: updatedMessages, responseMessage, isAborted }) => {
+        if (isAborted || !sessionId) return;
 
-      const user = await getOrCreateUser();
-      if (!user) return;
+        const finishUser = await getOrCreateUser();
+        if (!finishUser) return;
 
-      const session = await prisma.chatSession.findFirst({
-        where: { id: sessionId, userId: user.id },
-      });
-      if (!session) return;
+        const toolParts = responseMessage.parts.filter(isToolUIPart);
+        for (const part of toolParts) {
+          await recordToolExecution(finishUser.id, getToolName(part), sessionId);
+        }
 
-      const lastUserMsg = [...updatedMessages].reverse().find((m) => m.role === 'user');
-      const userContent = lastUserMsg ? extractTextFromParts(lastUserMsg.parts) : '';
-      const assistantContent = extractTextFromParts(responseMessage.parts);
+        const session = await prisma.chatSession.findFirst({
+          where: { id: sessionId, userId: finishUser.id },
+        });
+        if (!session) return;
 
-      try {
-        await prisma.$transaction([
-          prisma.chatMessage.create({
-            data: {
-              sessionId,
-              role: 'user',
-              content: userContent || '[No text]',
-            },
-          }),
-          prisma.chatMessage.create({
-            data: {
-              sessionId,
-              role: 'assistant',
-              content: assistantContent || '[No response]',
-              metadata: responseMessage.parts.length > 1 ? { partsCount: responseMessage.parts.length } : undefined,
-            },
-          }),
-          prisma.chatSession.update({
-            where: { id: sessionId },
-            data: {
-              messageCount: { increment: 2 },
-              updatedAt: new Date(),
-            },
-          }),
-        ]);
-      } catch (err) {
-        console.error('Chat persist error:', err);
-      }
-    },
-  });
+        const lastUserMsg = [...updatedMessages].reverse().find((m) => m.role === 'user');
+        const userContent = lastUserMsg ? extractTextFromParts(lastUserMsg.parts) : '';
+        const assistantContent = extractTextFromParts(responseMessage.parts);
+
+        try {
+          await prisma.$transaction([
+            prisma.chatMessage.create({
+              data: {
+                sessionId,
+                role: 'user',
+                content: userContent || '[No text]',
+              },
+            }),
+            prisma.chatMessage.create({
+              data: {
+                sessionId,
+                role: 'assistant',
+                content: assistantContent || '[No response]',
+                metadata: responseMessage.parts.length > 1 ? { partsCount: responseMessage.parts.length } : undefined,
+              },
+            }),
+            prisma.chatSession.update({
+              where: { id: sessionId },
+              data: {
+                messageCount: { increment: 2 },
+                updatedAt: new Date(),
+              },
+            }),
+          ]);
+        } catch (err) {
+          console.error('Chat persist error:', err);
+        }
+      },
+    });
+  } catch (err) {
+    console.error('Chat stream error:', err);
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    return new Response(msg, {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
 }
 
 export async function GET(req: Request) {

@@ -1,0 +1,10 @@
+{
+  "buildCommand": "prisma generate && prisma db push --accept-data-loss && next build",
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/cron/run",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

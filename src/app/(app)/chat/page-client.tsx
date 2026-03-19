@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, isToolUIPart, getToolName } from 'ai';
-import { Bot, User, Loader2, Paperclip, ArrowUp, ExternalLink, Copy, ThumbsUp, ThumbsDown, RotateCw, Share2, Wand2, PanelRightOpen, PanelRightClose, Wrench, Check } from 'lucide-react';
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, isToolUIPart, getToolName, type UIMessage } from 'ai';
+import { Bot, User, Loader2, Paperclip, ArrowUp, ExternalLink, Copy, ThumbsUp, ThumbsDown, Share2, Wand2, Check, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ToolInvocationCard } from '@/components/chat/tool-invocation-card';
+import LivePreviewPanel from '@/components/chat/live-preview-panel';
 import { MarkdownRenderer } from '@/components/chat/markdown-renderer';
 
 const SUGGESTIONS = [
@@ -35,8 +36,11 @@ function extractConnectLinks(text: string): Array<{ app: string; url: string }> 
 export function ChatInterface() {
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [initialMessagesLoaded, setInitialMessagesLoaded] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
   sessionIdRef.current = sessionId;
@@ -45,8 +49,6 @@ export function ChatInterface() {
   const urlMessage = searchParams.get('message');
   const loadedForSessionRef = useRef<string | null>(null);
 
-  const [model, setModel] = useState('openai/gpt-5.4');
-  const [showExecutionPanel, setShowExecutionPanel] = useState(false);
   const [connections, setConnections] = useState<Array<{ slug: string; name: string; isConnected: boolean }>>([]);
 
   const transportRef = useRef(
@@ -60,13 +62,10 @@ export function ChatInterface() {
           trigger,
           messageId,
           sessionId: sessionIdRef.current ?? body?.id ?? id,
-          model: modelRef.current,
         },
       }),
     })
   );
-  const modelRef = useRef(model);
-  modelRef.current = model;
 
   const {
     messages,
@@ -74,6 +73,7 @@ export function ChatInterface() {
     status,
     setMessages,
     error,
+    clearError,
   } = useChat({
     id: sessionId ?? undefined,
     transport: transportRef.current,
@@ -85,10 +85,10 @@ export function ChatInterface() {
 
   const urlConnected = searchParams.get('connected');
   useEffect(() => {
-    const storedSession = typeof window !== 'undefined' && urlConnected ? localStorage.getItem('rube_pendingConnectSession') : null;
+    const storedSession = typeof window !== 'undefined' && urlConnected ? localStorage.getItem('jungor_pendingConnectSession') : null;
     const targetSessionId = urlSessionId || storedSession || null;
     if (typeof window !== 'undefined' && urlConnected && storedSession) {
-      localStorage.removeItem('rube_pendingConnectSession');
+      localStorage.removeItem('jungor_pendingConnectSession');
     }
     if (!targetSessionId) {
       setSessionId(null);
@@ -108,11 +108,17 @@ export function ChatInterface() {
 
     const load = async () => {
       const msgRes = await fetch(`/api/chat?sessionId=${targetSessionId}`);
-      const msgData = await msgRes.json();
+      const text = await msgRes.text();
+      let msgData: { messages?: unknown[] } = {};
+      try {
+        msgData = text?.trim() ? JSON.parse(text) : {};
+      } catch {
+        /* resposta vazia ou inválida */
+      }
       if (cancelled) return;
 
-      if (msgData.messages?.length > 0) {
-        setMessages(msgData.messages);
+      if (msgData.messages && msgData.messages.length > 0) {
+        setMessages(msgData.messages as UIMessage[]);
       }
       setInitialMessagesLoaded(true);
     };
@@ -127,14 +133,26 @@ export function ChatInterface() {
     if (!urlSessionId && initialMessagesLoaded) {
       const pickFirstSession = async () => {
         const res = await fetch('/api/sessions');
-        const data = await res.json();
+        const resText = await res.text();
+        let data: { sessions?: { id: string }[] } = {};
+        try {
+          data = resText?.trim() ? JSON.parse(resText) : {};
+        } catch {
+          return;
+        }
         if (data.sessions?.length) {
           const first = data.sessions[0];
           loadedForSessionRef.current = first.id;
           setSessionId(first.id);
           const msgRes = await fetch(`/api/chat?sessionId=${first.id}`);
-          const msgData = await msgRes.json();
-          if (msgData.messages?.length > 0) setMessages(msgData.messages);
+          const msgText = await msgRes.text();
+          let msgData: { messages?: unknown[] } = {};
+          try {
+            msgData = msgText?.trim() ? JSON.parse(msgText) : {};
+          } catch {
+            /* ignora */
+          }
+          if (msgData.messages && msgData.messages.length > 0) setMessages(msgData.messages as UIMessage[]);
         }
       };
       pickFirstSession();
@@ -142,12 +160,33 @@ export function ChatInterface() {
   }, [urlSessionId, initialMessagesLoaded, setMessages]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const root = scrollContainerRef.current;
+    const sentinel = messagesEndRef.current;
+    if (!root || !sentinel) return;
+    const obs = new IntersectionObserver(
+      ([e]) => setIsNearBottom(e?.isIntersecting ?? false),
+      { root, rootMargin: '120px 0px 0px 0px', threshold: 0 }
+    );
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, [messages.length, initialMessagesLoaded]);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el || !isNearBottom) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [messages, isNearBottom]);
 
   useEffect(() => {
     fetch('/api/composio/connections')
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        try {
+          return text?.trim() ? JSON.parse(text) : {};
+        } catch {
+          return {};
+        }
+      })
       .then((d) => {
         const items = d.toolkits ?? [];
         setConnections(items.map((t: { slug: string; name: string; isConnected: boolean }) => ({
@@ -173,8 +212,14 @@ export function ChatInterface() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: text.slice(0, 50) }),
           });
-          const data = await res.json();
-          sid = data.session?.id;
+          const resText = await res.text();
+          let data: { session?: { id?: string } } = {};
+          try {
+            data = resText?.trim() ? JSON.parse(resText) : {};
+          } catch {
+            /* resposta inválida (ex: HTML de redirect) */
+          }
+          sid = data.session?.id ?? null;
           if (sid) {
             sessionIdRef.current = sid;
             setSessionId(sid);
@@ -201,11 +246,19 @@ export function ChatInterface() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: text.slice(0, 50) }),
           });
-          const data = await res.json();
-          sid = data.session?.id;
+          const resText = await res.text();
+          let data: { session?: { id?: string } } = {};
+          try {
+            data = resText?.trim() ? JSON.parse(resText) : {};
+          } catch {
+            /* resposta inválida (ex: HTML de redirect) */
+          }
+          sid = data.session?.id ?? null;
           if (sid) {
             sessionIdRef.current = sid;
             setSessionId(sid);
+          } else {
+            return;
           }
         } catch (err) {
           console.error(err);
@@ -236,25 +289,35 @@ export function ChatInterface() {
     window.history.replaceState({}, '', window.location.pathname + (sessionId ? `?session=${sessionId}` : ''));
   }, [urlConnected, initialMessagesLoaded, messages.length, isLoading, sessionId, handleSuggestion]);
 
-  const handleCopy = useCallback((text: string) => {
+  const handleCopy = useCallback((text: string, messageId?: string) => {
     navigator.clipboard.writeText(text);
+    if (messageId) {
+      setCopiedId(messageId);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   }, []);
 
-  const toolParts = messages.flatMap((m) =>
-    m.role === 'assistant' ? m.parts.filter(isToolUIPart) : []
-  );
-  const connectedCount = connections.filter((c) => c.isConnected).length;
+
+  const scrollToLatest = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    setIsNearBottom(true);
+  };
 
   return (
-    <div className="flex h-full flex-col lg:flex-row">
-      <div className="flex flex-1 flex-col min-w-0">
-      <div className="flex-1 overflow-y-auto overscroll-contain">
+    <div className="flex h-full flex-col">
+      <div className="relative flex flex-1 flex-col min-h-0 min-w-0">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+      >
         {messages.length === 0 && !isLoading ? (
           <div className="flex h-full flex-col items-center justify-center px-5 sm:px-6">
-            <h1 className="text-xl sm:text-2xl font-semibold text-[#0a0a0a] mb-2 text-center">
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-2 text-center">
               How can I help you today?
             </h1>
-            <p className="text-sm text-[#9ca3af] mb-6 text-center">
+            <p className="text-sm text-muted-foreground mb-6 text-center">
               Connect apps, automate workflows, get things done
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 w-full max-w-lg">
@@ -262,7 +325,7 @@ export function ChatInterface() {
                 <button
                   key={i}
                   onClick={() => handleSuggestion(s.text)}
-                  className="flex items-center gap-3 rounded-xl border border-[#e5e7eb] bg-white p-3.5 sm:p-4 text-left text-sm text-[#374151] active:bg-[#f3f4f6] hover:bg-[#f9fafb] transition-colors"
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 sm:p-4 text-left text-sm text-foreground active:bg-muted hover:bg-card-hover transition-colors"
                 >
                   <span className="text-lg shrink-0">{s.icon}</span>
                   <span className="leading-snug">{s.text}</span>
@@ -273,21 +336,21 @@ export function ChatInterface() {
         ) : (
           <div className="mx-auto max-w-2xl px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
             {messages.map((message) => (
-              <div key={message.id}>
-                {message.role === 'assistant' && (
-                  <>
-                    {message.parts.filter(isToolUIPart).map((part, idx) => (
-                      <div key={`tool-${idx}`} className="ml-10 sm:ml-11 mt-2">
-                        <ToolInvocationCard
-                          part={{
-                            ...part,
-                            toolName: getToolName(part),
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </>
-                )}
+              <div key={message.id} className="group">
+                {message.role === 'assistant' && (() => {
+                  const toolUIParts = message.parts.filter(isToolUIPart);
+                  return toolUIParts.length > 0 ? (
+                    <div className="ml-10 sm:ml-11 mt-2">
+                      <LivePreviewPanel
+                        parts={toolUIParts.map((part) => ({
+                          ...part,
+                          toolName: getToolName(part),
+                        }))}
+                      />
+                    </div>
+                  ) : null;
+                })()}
+                {((message.role === 'assistant' && message.parts.some((p) => p.type === 'text')) || message.role === 'user') && (
                 <div
                   className={cn(
                     'chat-message flex gap-2.5 sm:gap-3',
@@ -295,16 +358,16 @@ export function ChatInterface() {
                   )}
                 >
                   {message.role === 'assistant' && (
-                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#f26522] mt-0.5">
-                      <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center mt-0.5">
+                      <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand" />
                     </div>
                   )}
                   <div
                     className={cn(
-                      'max-w-[85%] sm:max-w-[80%] rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 text-[14px] sm:text-sm leading-relaxed',
+                      'max-w-[85%] sm:max-w-[80%] rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 text-sm leading-relaxed',
                       message.role === 'user'
-                        ? 'bg-[#0a0a0a] text-white'
-                        : 'bg-[#f3f4f6] text-[#0a0a0a]'
+                        ? 'bg-foreground text-white'
+                        : 'bg-muted text-foreground'
                     )}
                   >
                     {message.parts
@@ -328,11 +391,11 @@ export function ChatInterface() {
                                     rel="noopener noreferrer"
                                     onClick={() => {
                                       if (typeof window !== 'undefined' && sessionId) {
-                                        localStorage.setItem('rube_pendingConnectSession', sessionId);
-                                        document.cookie = `rube_pendingSession=${sessionId}; path=/; max-age=300`;
+                                        localStorage.setItem('jungor_pendingConnectSession', sessionId);
+                                        document.cookie = `jungor_pendingSession=${sessionId}; path=/; max-age=300`;
                                       }
                                     }}
-                                    className="flex items-center gap-2 rounded-lg bg-[#f26522] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#e55a1d] w-fit"
+                                    className="flex items-center gap-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover w-fit"
                                   >
                                     <ExternalLink className="h-3 w-3" /> Connect {link.app}
                                   </a>
@@ -344,13 +407,14 @@ export function ChatInterface() {
                       })}
                   </div>
                   {message.role === 'user' && (
-                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#e5e7eb] mt-0.5">
-                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#6b7280]" />
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center mt-0.5">
+                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                     </div>
                   )}
                 </div>
+                )}
                 {message.role === 'assistant' && message.parts.some((p) => p.type === 'text') && (
-                  <div className="ml-10 sm:ml-11 mt-1 flex items-center gap-2 opacity-70">
+                  <div className="ml-10 sm:ml-11 mt-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
                       onClick={() =>
@@ -358,24 +422,42 @@ export function ChatInterface() {
                           message.parts
                             .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
                             .map((p) => p.text)
-                            .join('')
+                            .join(''),
+                          message.id
                         )
                       }
-                      className="p-1 rounded hover:bg-[#e5e7eb]"
-                      title="Copy"
+                      className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Copy response"
+                      aria-label="Copy response"
                     >
-                      <Copy className="h-3.5 w-3.5" />
+                      {copiedId === message.id ? (
+                        <Check className="h-3.5 w-3.5 text-green-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
                     </button>
-                    <button type="button" className="p-1 rounded hover:bg-[#e5e7eb]" title="Good">
+                    <button
+                      type="button"
+                      className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Good response"
+                      aria-label="Good response"
+                    >
                       <ThumbsUp className="h-3.5 w-3.5" />
                     </button>
-                    <button type="button" className="p-1 rounded hover:bg-[#e5e7eb]" title="Bad">
+                    <button
+                      type="button"
+                      className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Bad response"
+                      aria-label="Bad response"
+                    >
                       <ThumbsDown className="h-3.5 w-3.5" />
                     </button>
-                    <button type="button" className="p-1 rounded hover:bg-[#e5e7eb]" title="Regenerate">
-                      <RotateCw className="h-3.5 w-3.5" />
-                    </button>
-                    <button type="button" className="p-1 rounded hover:bg-[#e5e7eb]" title="Share">
+                    <button
+                      type="button"
+                      className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Share"
+                      aria-label="Share conversation"
+                    >
                       <Share2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -383,16 +465,31 @@ export function ChatInterface() {
               </div>
             ))}
             {error && (
-              <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                {error.message}
+              <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p>{error.message}</p>
+                  {error.message?.includes('Upgrade') && (
+                    <Link href="/settings?tab=billing" className="mt-2 inline-block text-xs font-medium text-red-800 underline hover:no-underline">
+                      Go to Settings →
+                    </Link>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => clearError?.()}
+                  className="shrink-0 p-1 rounded hover:bg-red-100 text-red-600"
+                  aria-label="Dismiss"
+                >
+                  ×
+                </button>
               </div>
             )}
             {isLoading && (
               <div className="chat-message flex gap-2.5 sm:gap-3">
-                <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#f26522]">
-                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white animate-spin" />
+                <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center">
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand animate-spin" />
                 </div>
-                <div className="rounded-2xl bg-[#f3f4f6] px-4 py-2.5 text-sm text-[#6b7280]">
+                <div className="rounded-2xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
                   Thinking...
                 </div>
               </div>
@@ -401,59 +498,48 @@ export function ChatInterface() {
           </div>
         )}
       </div>
+      {!isNearBottom && messages.length > 0 && (
+        <button
+          type="button"
+          onClick={scrollToLatest}
+          className="absolute bottom-[4.5rem] sm:bottom-20 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md hover:bg-muted transition-colors"
+          title="Scroll to latest"
+          aria-label="Scroll to latest message"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
+      )}
 
-      <div className="border-t border-[#e5e7eb] bg-white safe-area-bottom">
+      <div className="border-t border-border bg-background safe-area-bottom shrink-0">
         <form onSubmit={handleSubmit} className="mx-auto max-w-2xl px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-border bg-card px-2.5 sm:px-3 py-2 focus-within:border-brand/40 focus-within:shadow-sm transition-all">
             <button
               type="button"
-              onClick={() => setShowExecutionPanel(!showExecutionPanel)}
-              className="hidden lg:flex items-center gap-1.5 rounded-lg border border-[#e5e7eb] px-2.5 py-1.5 text-xs font-medium text-[#6b7280] hover:bg-[#f9fafb]"
-              title={showExecutionPanel ? 'Ocultar painel' : 'Mostrar painel de execução'}
-            >
-              {showExecutionPanel ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
-              <span>Painel</span>
-            </button>
-            <label className="text-xs font-medium text-[#6b7280] shrink-0">Model</label>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="text-xs rounded-lg border border-[#e5e7eb] bg-white px-2.5 py-1.5 text-[#0a0a0a] focus:outline-none focus:ring-1 focus:ring-[#f26522]/30"
-            >
-              <option value="openai/gpt-5.4">GPT-5.4</option>
-              <option value="anthropic/claude-sonnet-4.6">Claude Sonnet 4.6</option>
-              <option value="zai/glm-5-turbo">GLM-5 Turbo</option>
-              <option value="xai/grok-4.20-non-reasoning-beta">Grok 4.20</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-[#e5e7eb] bg-white px-2.5 sm:px-3 py-2 focus-within:border-[#d1d5db] focus-within:shadow-sm transition-all">
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted shrink-0"
               title="Attach"
             >
               <Paperclip className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => handleSuggestion('Hey Rube, create a new recipe for me')}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#6b7280] hover:bg-[#f3f4f6] shrink-0"
-              title="Create Recipe"
+              onClick={() => handleSuggestion('Hey Jungor, help me create a new automation')}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted shrink-0"
+              title="Create Automation"
             >
               <Wand2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Recipe</span>
+              <span className="hidden sm:inline">Automate</span>
             </button>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything..."
-              className="flex-1 bg-transparent text-[15px] sm:text-sm text-[#0a0a0a] placeholder:text-[#9ca3af] focus:outline-none min-w-0"
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0a0a0a] text-white disabled:opacity-40 transition-colors shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-white disabled:opacity-40 transition-colors shrink-0"
             >
               <ArrowUp className="h-4 w-4" />
             </button>
@@ -461,55 +547,6 @@ export function ChatInterface() {
         </form>
       </div>
       </div>
-
-      {showExecutionPanel && (
-        <div className="hidden lg:flex lg:w-72 xl:w-80 flex-col border-l border-[#e5e7eb] bg-[#fafafa] overflow-y-auto">
-          <div className="p-4 border-b border-[#e5e7eb]">
-            <h3 className="text-sm font-semibold text-[#0a0a0a]">Execução</h3>
-            <p className="text-xs text-[#9ca3af] mt-0.5">Status do fluxo e conexões</p>
-          </div>
-          <div className="p-4 space-y-4">
-            <div>
-              <h4 className="text-xs font-medium text-[#6b7280] mb-2 flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5" /> Conexões ({connectedCount}/{connections.length})
-              </h4>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {connections.filter((c) => c.isConnected).slice(0, 8).map((c) => (
-                  <div key={c.slug} className="flex items-center gap-2 text-xs">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[#0a0a0a] truncate">{c.name}</span>
-                  </div>
-                ))}
-                {connectedCount === 0 && (
-                  <p className="text-xs text-[#9ca3af]">Nenhuma app conectada</p>
-                )}
-              </div>
-            </div>
-            <div>
-              <h4 className="text-xs font-medium text-[#6b7280] mb-2 flex items-center gap-1.5">
-                <Wrench className="h-3.5 w-3.5" /> Ferramentas ({toolParts.length})
-              </h4>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {toolParts.slice(-6).reverse().map((p, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    <span className={cn(
-                      'w-2 h-2 rounded-full',
-                      (p as { state?: string }).state === 'output-available' ? 'bg-green-500' :
-                      (p as { state?: string }).state === 'output-error' ? 'bg-red-500' : 'bg-amber-400'
-                    )} />
-                    <span className="text-[#0a0a0a] truncate">
-                      {getToolName(p).replace(/^COMPOSIO_/, '').replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                ))}
-                {toolParts.length === 0 && (
-                  <p className="text-xs text-[#9ca3af]">Nenhuma ferramenta executada</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

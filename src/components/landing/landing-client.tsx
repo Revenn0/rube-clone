@@ -31,12 +31,12 @@ const FEATURES = [
   {
     icon: Calendar,
     title: 'Funciona Enquanto Você Dorme',
-    desc: 'Agende tarefas e deixe o Rube executá-las no piloto automático.',
+    desc: 'Agende tarefas e deixe o Jungor executá-las no piloto automático.',
   },
   {
     icon: MessageSquare,
     title: 'Chat Inteligente',
-    desc: 'Converse em linguagem natural. O Rube entende e executa.',
+    desc: 'Converse em linguagem natural. O Jungor entende e executa.',
   },
 ];
 
@@ -49,11 +49,11 @@ const EXAMPLES = [
 ];
 
 const COMPARISON = [
-  { rube: 'Segundos', other: '30-60 min de setup' },
-  { rube: 'OAuth gerenciado', other: 'API keys em plaintext' },
-  { rube: '500+ integrações', other: 'Config manual por app' },
-  { rube: 'Log completo de ações', other: 'Nenhum' },
-  { rube: 'Revogar em um clique', other: 'Procurar e deletar configs' },
+  { jungor: 'Segundos', other: '30-60 min de setup' },
+  { jungor: 'OAuth gerenciado', other: 'API keys em plaintext' },
+  { jungor: '500+ integrações', other: 'Config manual por app' },
+  { jungor: 'Log completo de ações', other: 'Nenhum' },
+  { jungor: 'Revogar em um clique', other: 'Procurar e deletar configs' },
 ];
 
 export function LandingClient() {
@@ -63,7 +63,7 @@ export function LandingClient() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold tracking-tight">
-            Rube
+            Jungor
           </Link>
           <div className="flex items-center gap-4">
             <Link
@@ -100,7 +100,7 @@ export function LandingClient() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Rube é um assistente 24/7 com centenas de ferramentas via OAuth.
+            Jungor é um assistente 24/7 com centenas de ferramentas via OAuth.
             Conecte seus apps e automatize fluxos em linguagem natural.
           </motion.p>
           <motion.div
@@ -130,7 +130,7 @@ export function LandingClient() {
         >
           <div className="flex items-center gap-2 text-sm text-white/50 mb-4">
             <span className="w-2 h-2 rounded-full bg-green-500" />
-            Rube em ação
+            Jungor em ação
           </div>
           <p className="text-white/80 mb-6 font-mono text-sm sm:text-base">
             &quot;todos os dias 9 da manhã, leia meus emails e coloque no notion&quot;
@@ -150,7 +150,7 @@ export function LandingClient() {
             </div>
           </div>
           <p className="mt-4 text-white/50 text-sm">
-            O Rube entende linguagem natural e preenche automaticamente o agendamento.
+            O Jungor entende linguagem natural e preenche automaticamente o agendamento.
           </p>
         </motion.div>
       </section>
@@ -196,7 +196,7 @@ export function LandingClient() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            Por que Rube?
+            Por que Jungor?
           </motion.h2>
           <motion.p
             className="text-white/60 text-center mb-12"
@@ -214,7 +214,7 @@ export function LandingClient() {
           >
             <div className="grid grid-cols-2">
               <div className="bg-[#f26522]/10 px-6 py-4 font-semibold border-b border-white/10">
-                Rube
+                Jungor
               </div>
               <div className="bg-white/5 px-6 py-4 font-semibold border-b border-white/10 border-l border-white/10">
                 Alternativas
@@ -223,7 +223,7 @@ export function LandingClient() {
                 <div key={i} className="contents">
                   <div className="px-6 py-4 border-b border-white/5 flex items-center gap-2">
                     <Check className="h-4 w-4 text-green-500 shrink-0" />
-                    {row.rube}
+                    {row.jungor}
                   </div>
                   <div className="px-6 py-4 border-b border-white/5 border-l border-white/10 text-white/60">
                     {row.other}
@@ -288,7 +288,7 @@ export function LandingClient() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-white/10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-white/50 text-sm">Rube — Connect anything to anything</span>
+          <span className="text-white/50 text-sm">Jungor — Connect anything to anything</span>
           <div className="flex gap-6">
             <Link href="/sign-in" className="text-sm text-white/50 hover:text-white/80">
               Entrar

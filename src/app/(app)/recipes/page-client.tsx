@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, ArrowRight, Play, Pause, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import { Plus, ArrowRight, Play, Pause, Trash2, Clock, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Workflow {
   id: string;
@@ -41,10 +42,10 @@ export function RecipesPageClient() {
       .then((data) => {
         if (data.session?.id) {
           router.push(
-            `/chat?session=${data.session.id}&message=${encodeURIComponent('Hey Rube, create a new recipe for me')}`
+            `/chat?session=${data.session.id}&message=${encodeURIComponent('Hey Jungor, create a new recipe for me')}`
           );
         } else {
-          router.push(`/chat?message=${encodeURIComponent('Hey Rube, create a new recipe for me')}`);
+          router.push(`/chat?message=${encodeURIComponent('Hey Jungor, create a new recipe for me')}`);
         }
       })
       .catch(() => router.push('/chat'));
@@ -64,36 +65,36 @@ export function RecipesPageClient() {
 
   return (
     <div className="min-h-full">
-      <div className="border-b border-[#e5e7eb] px-4 sm:px-6 py-3 sm:py-4">
+      <div className="border-b border-border px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           <button
             onClick={createRecipe}
-            className="flex items-center gap-2 rounded-lg bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a1a1a] transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-white hover:bg-foreground/90 transition-colors"
           >
             <Plus className="h-4 w-4" />
             Create A New Recipe
           </button>
-          <span className="text-sm text-[#6b7280]">{active.length} active</span>
+          <span className="text-sm text-muted-foreground">{active.length} active</span>
         </div>
       </div>
 
       <div className="px-4 sm:px-6 py-5 sm:py-6 space-y-6">
         {loading ? (
-          <p className="text-sm text-[#9ca3af]">Loading recipes...</p>
-        ) : workflows.length === 0 ? (
-          <div
-            onClick={createRecipe}
-            className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#e5e7eb] bg-[#fafafa] px-5 sm:px-6 py-12 sm:py-16 cursor-pointer hover:border-[#d1d5db] hover:bg-[#f9fafb] transition-colors"
-          >
-            <p className="text-sm text-[#6b7280] mb-2">No recipes yet</p>
-            <p className="text-xs text-[#9ca3af] mb-4">Create your first recipe to automate workflows</p>
-            <ArrowRight className="h-5 w-5 text-[#d1d5db]" />
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : workflows.length === 0 ? (
+          <EmptyState
+            icon={<ArrowRight className="h-12 w-12" />}
+            title="No recipes yet"
+            description="Create your first recipe to automate workflows"
+            onClick={createRecipe}
+          />
         ) : (
           <>
             {active.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-[#6b7280] mb-3">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">
                   Active recipes
                   <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                     {active.length}
@@ -103,22 +104,22 @@ export function RecipesPageClient() {
                   {active.map((wf) => (
                     <div
                       key={wf.id}
-                      className="flex items-center justify-between rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 hover:bg-[#f9fafb] transition-colors"
+                      className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 hover:bg-card-hover transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="h-2.5 w-2.5 rounded-full bg-green-400 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-[#0a0a0a] truncate">{wf.name}</p>
-                          <p className="text-xs text-[#9ca3af] mt-0.5">
+                          <p className="text-sm font-medium text-foreground truncate">{wf.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             Apps: {wf.apps.length ? wf.apps.join(', ') : 'None'} · {wf.runCount} runs
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-[#9ca3af]">{formatLastRun(wf.lastRunAt)}</span>
+                        <span className="text-xs text-muted-foreground">{formatLastRun(wf.lastRunAt)}</span>
                         <button
                           onClick={() => {}}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#0a0a0a]"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                           title="Run"
                         >
                           <Play className="h-3.5 w-3.5" />
@@ -131,7 +132,7 @@ export function RecipesPageClient() {
             )}
             {paused.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-[#6b7280] mb-3">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">
                   Paused
                   <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                     {paused.length}
@@ -141,14 +142,14 @@ export function RecipesPageClient() {
                   {paused.map((wf) => (
                     <div
                       key={wf.id}
-                      className="flex items-center justify-between rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 opacity-70"
+                      className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3 opacity-70"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#0a0a0a] truncate">{wf.name}</p>
-                        <p className="text-xs text-[#9ca3af] mt-0.5">Apps: {wf.apps.join(', ')}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{wf.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Apps: {wf.apps.join(', ')}</p>
                       </div>
                       <button
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-green-50 hover:text-green-600"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-50 hover:text-green-600"
                         title="Resume"
                       >
                         <Play className="h-3.5 w-3.5" />

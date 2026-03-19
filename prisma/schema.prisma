@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -17,12 +18,44 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  connections   AppConnection[]
-  workflows     Workflow[]
-  executions    WorkflowExecution[]
-  chatSessions  ChatSession[]
-  auditLogs     AuditLog[]
+  connections     AppConnection[]
+  workflows       Workflow[]
+  executions     WorkflowExecution[]
+  chatSessions    ChatSession[]
+  projects       Project[]
+  auditLogs      AuditLog[]
   orgMemberships OrgMember[]
+  subscription   Subscription?
+  usageRecords   UsageRecord[]
+}
+
+model Subscription {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  plan                  String    @default("free")
+  status                String    @default("active")
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id])
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  toolName  String?
+  sessionId String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 model Organization {
@@ -107,16 +140,30 @@ model WorkflowExecution {
   user        User      @relation(fields: [userId], references: [id])
 }
 
+model Project {
+  id          String        @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  color       String        @default("#f26522")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id])
+  chatSessions ChatSession[]
+}
+
 model ChatSession {
   id          String    @id @default(cuid())
   userId      String
-  projectId   String    @default("general")
+  projectId   String?
   title       String
   messageCount Int      @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  user        User      @relation(fields: [userId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
   messages    ChatMessage[]
 }
 

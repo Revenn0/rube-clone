@@ -33,7 +33,7 @@ export function ChatBubble() {
           </SheetHeader>
           <div className="mt-6 flex flex-col gap-4">
             <p className="text-sm text-[#6b7280]">
-              Start a conversation with Rube or continue an existing chat.
+              Start a conversation with Jungor or continue an existing chat.
             </p>
             <div className="flex flex-col gap-2">
               <Button

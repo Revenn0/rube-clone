@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Composio } from '@composio/core';
 import { getOrCreateUser } from '@/lib/auth';
+import { isKnownUnsupportedToolkit } from '@/lib/composio-unsupported';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -20,6 +21,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limit = Math.min(parseInt(searchParams.get('limit') || '30', 10), 100);
   const offset = parseInt(searchParams.get('offset') || '0', 10);
+  const search = (searchParams.get('search') || '').trim().toLowerCase();
 
   try {
     // 1. Fetch toolkits from Composio REST API until we have enough for this page
@@ -65,20 +67,34 @@ export async function GET(req: Request) {
     );
 
     // 3. Merge toolkits with connection status
-    const merged = allItems.map((t) => ({
-      slug: t.slug as string,
-      name: t.name as string,
-      description: t.description as string,
-      logo: t.logo as string,
-      tools_count: t.tools_count as number,
-      categories: t.categories as Array<{ slug?: string; id?: string; name: string }>,
-      isConnected: connectionBySlug.get(t.slug as string)?.isConnected ?? false,
-      connectedAccountId: connectionBySlug.get(t.slug as string)?.connectedAccountId,
-    }));
+    let merged = allItems.map((t) => {
+      const slug = t.slug as string;
+      return {
+        slug,
+        name: t.name as string,
+        description: t.description as string,
+        logo: t.logo as string,
+        tools_count: t.tools_count as number,
+        categories: t.categories as Array<{ slug?: string; id?: string; name: string }>,
+        isConnected: connectionBySlug.get(slug)?.isConnected ?? false,
+        connectedAccountId: connectionBySlug.get(slug)?.connectedAccountId,
+        authorizeUnsupported: isKnownUnsupportedToolkit(slug),
+      };
+    });
 
-    // 4. Paginate
+    // 4. Filter by search (server-side)
+    if (search) {
+      merged = merged.filter(
+        (t) =>
+          t.name.toLowerCase().includes(search) ||
+          t.description.toLowerCase().includes(search) ||
+          t.slug.toLowerCase().includes(search)
+      );
+    }
+
+    // 5. Paginate
     const toolkits = merged.slice(offset, offset + limit);
-    const hasMore = cursor != null || merged.length > offset + limit;
+    const hasMore = merged.length > offset + limit;
     const totalFetched = merged.length;
 
     return NextResponse.json({ toolkits, hasMore, totalFetched });

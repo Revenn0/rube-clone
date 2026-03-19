@@ -1,10 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { APPS, TOOL_COUNT } from '@/lib/apps';
-import { Search, LayoutGrid, List, ExternalLink, Check, Loader2, RefreshCw, Wrench, Settings } from 'lucide-react';
+import { Search, LayoutGrid, List, ExternalLink, Check, Loader2, RefreshCw, Wrench, Settings, Filter } from 'lucide-react';
+import {
+  ALL_CATEGORY,
+  CANONICAL_CATEGORIES,
+  normalizeCategoryName,
+  isFeaturedSlug,
+} from '@/lib/app-categories';
+import { isKnownUnsupportedToolkit } from '@/lib/composio-unsupported';
+import { CategoryFilterPanel } from '@/components/apps/category-filter-panel';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useToast } from '@/lib/toast';
 
 const PAGE_SIZE = 30;
 
@@ -24,6 +34,7 @@ interface MarketplaceApp {
   categories: Array<{ slug?: string; id?: string; name: string }>;
   isConnected: boolean;
   connectedAccountId?: string;
+  authorizeUnsupported?: boolean;
 }
 
 const APP_COLORS: Record<string, string> = {
@@ -89,21 +100,22 @@ function AppIcon({
         }}
       />
       {showCheck && (
-        <div className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#f26522]">
-          <Check className="h-2.5 w-2.5 text-white" />
+        <div className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-green-500 ring-2 ring-background shadow-sm">
+          <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
         </div>
       )}
     </div>
   );
 }
 
-const DEFAULT_CATEGORIES = ['All', 'Productivity', 'Communication', 'Development', 'Social', 'Finance'];
-
 export default function AppsPageClient() {
+  const { addToast } = useToast();
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'my-apps' | 'marketplace'>('marketplace');
-  const [category, setCategory] = useState('All');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [category, setCategory] = useState<string>(ALL_CATEGORY);
+  const [mobileCategoryOpen, setMobileCategoryOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [marketplaceApps, setMarketplaceApps] = useState<MarketplaceApp[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -118,7 +130,12 @@ export default function AppsPageClient() {
     else setLoading(true);
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(pageOffset) });
+      if (search) params.set('search', search);
       const res = await fetch(`/api/composio/toolkits?${params}`);
+      if (!res.ok) {
+        addToast('Failed to load apps. Please try again.', 'error');
+        return;
+      }
       const data = await res.json();
       if (data.toolkits?.length) {
         setMarketplaceApps((prev) => (append ? [...prev, ...data.toolkits] : data.toolkits));
@@ -129,18 +146,29 @@ export default function AppsPageClient() {
           });
           return Array.from(map.values());
         });
+      } else if (!append) {
+        setMarketplaceApps([]);
       }
       setHasMore(data.hasMore ?? false);
-    } catch (err) {
-      console.error('Failed to load toolkits:', err);
+    } catch {
+      addToast('Failed to load apps. Please check your connection.', 'error');
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [search]);
 
   useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setOffset(0);
     loadPage(0);
+  }, [loadPage]);
+
+  useEffect(() => {
     const interval = setInterval(() => loadPage(0), 15000);
     return () => clearInterval(interval);
   }, [loadPage]);
@@ -175,6 +203,15 @@ export default function AppsPageClient() {
       });
       const data = await res.json();
 
+      if (data.unsupported) {
+        addToast(
+          data.error || 'This app does not support browser connection. It may still work from chat.',
+          'info'
+        );
+        setConnecting(null);
+        return;
+      }
+
       if (data.redirectUrl) {
         const popup = window.open(data.redirectUrl, '_blank', 'width=600,height=700');
 
@@ -191,23 +228,34 @@ export default function AppsPageClient() {
           loadData();
           setConnecting(null);
         }, 15000);
+      } else if (data.error) {
+        addToast(
+          data.detail ? `${data.error} (${data.detail})` : data.error,
+          'error'
+        );
+        setConnecting(null);
       }
-    } catch (err) {
-      console.error('Connect failed:', err);
+    } catch {
+      addToast('Failed to connect app. Please try again.', 'error');
       setConnecting(null);
     }
   };
 
   const handleDisconnect = async (appId: string, connectedAccountId?: string) => {
     try {
-      await fetch('/api/composio/connections/disconnect', {
+      const res = await fetch('/api/composio/connections/disconnect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ connectedAccountId: connectedAccountId || '', appId }),
       });
+      if (!res.ok) {
+        addToast('Failed to disconnect app. Please try again.', 'error');
+        return;
+      }
+      addToast('App disconnected successfully.', 'success');
       loadData();
-    } catch (err) {
-      console.error('Disconnect failed:', err);
+    } catch {
+      addToast('Failed to disconnect app. Please try again.', 'error');
     }
   };
 
@@ -216,70 +264,104 @@ export default function AppsPageClient() {
     name: string;
     description: string;
     category: string;
+    canonicalCategory: string;
+    isFeatured: boolean;
+    authorizeUnsupported: boolean;
     logo: string;
     tools_count: number;
     isConnected: boolean;
     connectedAccountId?: string;
   };
 
-  // Marketplace: from /api/composio/toolkits. My Apps: same list filtered by connected. Fallback to APPS when empty.
-  const baseApps: DisplayApp[] = marketplaceApps.length > 0
-    ? marketplaceApps.map((t) => ({
-        id: t.slug,
-        name: t.name,
-        description: t.description,
-        category: t.categories?.[0]?.name ?? 'Other',
-        logo: t.logo,
-        tools_count: t.tools_count,
-        isConnected: t.isConnected,
-        connectedAccountId: t.connectedAccountId,
-      }))
-    : APPS.map((a) => ({
-        id: a.id,
-        name: a.name,
-        description: a.description,
-        category: a.category,
-        logo: '',
-        tools_count: TOOL_COUNT[a.id] ?? 0,
-        isConnected: isConnected(a.id),
-        connectedAccountId: connections.find((c) => c.appId === a.id)?.connectedAccountId,
-      }));
-
-  let filteredApps = baseApps.filter(
-    (app) =>
-      app.name.toLowerCase().includes(search.toLowerCase()) ||
-      app.description.toLowerCase().includes(search.toLowerCase())
+  const baseApps: DisplayApp[] = useMemo(
+    () =>
+      marketplaceApps.length > 0
+        ? marketplaceApps.map((t) => {
+            const rawCat = t.categories?.[0]?.name;
+            const canonical = normalizeCategoryName(rawCat, t.slug, t.name);
+            const featured = isFeaturedSlug(t.slug, t.tools_count);
+            const unsupported =
+              t.authorizeUnsupported ?? isKnownUnsupportedToolkit(t.slug);
+            return {
+              id: t.slug,
+              name: t.name,
+              description: t.description,
+              category: rawCat ?? canonical,
+              canonicalCategory: canonical,
+              isFeatured: featured,
+              authorizeUnsupported: unsupported,
+              logo: t.logo,
+              tools_count: t.tools_count,
+              isConnected: t.isConnected,
+              connectedAccountId: t.connectedAccountId,
+            };
+          })
+        : APPS.map((a) => {
+            const canonical = normalizeCategoryName(a.category, a.id, a.name);
+            const tc = TOOL_COUNT[a.id] ?? 0;
+            return {
+              id: a.id,
+              name: a.name,
+              description: a.description,
+              category: a.category,
+              canonicalCategory: canonical,
+              isFeatured: isFeaturedSlug(a.id, tc),
+              authorizeUnsupported: isKnownUnsupportedToolkit(a.id),
+              logo: '',
+              tools_count: tc,
+              isConnected: isConnected(a.id),
+              connectedAccountId: connections.find((c) => c.appId === a.id)?.connectedAccountId,
+            };
+          }),
+    [marketplaceApps, connections]
   );
-  if (category !== 'All') {
-    filteredApps = filteredApps.filter((app) => app.category === category);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of CANONICAL_CATEGORIES) counts[c] = 0;
+    counts[ALL_CATEGORY] = baseApps.length;
+    counts.Featured = baseApps.filter((a) => a.isFeatured).length;
+    for (const app of baseApps) {
+      const c = app.canonicalCategory;
+      if (counts[c] !== undefined) counts[c]++;
+      else counts['Other / Miscellaneous'] = (counts['Other / Miscellaneous'] ?? 0) + 1;
+    }
+    return counts;
+  }, [baseApps]);
+
+  let filteredApps = baseApps;
+  if (category !== ALL_CATEGORY) {
+    if (category === 'Featured') {
+      filteredApps = filteredApps.filter((app) => app.isFeatured);
+    } else {
+      filteredApps = filteredApps.filter((app) => app.canonicalCategory === category);
+    }
   }
   if (tab === 'my-apps') {
     filteredApps = filteredApps.filter((app) => app.isConnected);
   }
 
-  const categories = ['All', ...Array.from(new Set(baseApps.map((a) => a.category).filter(Boolean)))].sort();
-  const displayCategories = categories.length > 1 ? categories : DEFAULT_CATEGORIES;
   const connectedCount = connections.filter((c) => c.status === 'active').length;
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-[#e5e7eb] px-4 sm:px-6 py-3 sm:py-4">
+      <div className="shrink-0 border-b border-border px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[#0a0a0a]">
+            <h2 className="text-lg font-semibold text-foreground">
               Apps
               {marketplaceApps.length > 0 && (
-                <span className="ml-2 text-sm font-normal text-[#9ca3af]">
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
                   ({marketplaceApps.length}{hasMore ? '+' : ''})
                 </span>
               )}
             </h2>
-            <div className="flex items-center gap-1 rounded-lg border border-[#e5e7eb] bg-white p-0.5">
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5">
               <button
                 onClick={() => setTab('my-apps')}
                 className={cn(
                   'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                  tab === 'my-apps' ? 'bg-[#f3f4f6] text-[#0a0a0a]' : 'text-[#6b7280] hover:text-[#0a0a0a]'
+                  tab === 'my-apps' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 My Apps
@@ -288,7 +370,7 @@ export default function AppsPageClient() {
                 onClick={() => setTab('marketplace')}
                 className={cn(
                   'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                  tab === 'marketplace' ? 'bg-[#f3f4f6] text-[#0a0a0a]' : 'text-[#6b7280] hover:text-[#0a0a0a]'
+                  tab === 'marketplace' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 Marketplace
@@ -296,41 +378,37 @@ export default function AppsPageClient() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileCategoryOpen(true)}
+              className="lg:hidden flex items-center gap-2 h-9 shrink-0 rounded-lg border border-border bg-card px-3 text-sm text-foreground"
+            >
+              <Filter className="h-4 w-4 shrink-0" />
+              <span className="truncate max-w-[9rem] text-left">{category}</span>
+            </button>
             <div className="relative flex-1 min-w-[120px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search apps"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full rounded-lg border border-[#e5e7eb] bg-white pl-9 pr-3 text-sm text-[#0a0a0a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#f26522]/20 focus:border-[#f26522]"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
             </div>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="h-9 rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#f26522]/20"
-            >
-              <option value="All">All Categories</option>
-              {displayCategories.filter((c) => c !== 'All').map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <button onClick={loadData} className="p-2 rounded-lg hover:bg-[#f3f4f6] text-[#9ca3af]" title="Refresh">
+            <button onClick={loadData} className="p-2 rounded-lg hover:bg-muted text-muted-foreground" title="Refresh">
               <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             </button>
-            <div className="flex items-center gap-1 rounded-lg border border-[#e5e7eb] bg-white p-0.5">
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5">
               <button
                 onClick={() => setViewMode('grid')}
-                className={cn('p-1.5 rounded-md transition-colors', viewMode === 'grid' ? 'bg-[#f3f4f6] text-[#0a0a0a]' : 'text-[#9ca3af] hover:text-[#0a0a0a]')}
+                className={cn('p-1.5 rounded-md transition-colors', viewMode === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground')}
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={cn('p-1.5 rounded-md transition-colors', viewMode === 'list' ? 'bg-[#f3f4f6] text-[#0a0a0a]' : 'text-[#9ca3af] hover:text-[#0a0a0a]')}
+                className={cn('p-1.5 rounded-md transition-colors', viewMode === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground')}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -339,29 +417,101 @@ export default function AppsPageClient() {
         </div>
       </div>
 
+      {mobileCategoryOpen && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            aria-label="Close categories"
+            onClick={() => setMobileCategoryOpen(false)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-50 max-h-[min(70vh,520px)] overflow-hidden rounded-t-2xl border border-border bg-card shadow-xl lg:hidden flex flex-col">
+            <div className="shrink-0 border-b border-border px-4 py-3 flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">Filter by category</span>
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-foreground"
+                onClick={() => setMobileCategoryOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-2">
+              <CategoryFilterPanel
+                value={category}
+                onChange={(c) => {
+                  setCategory(c);
+                  setMobileCategoryOpen(false);
+                }}
+                counts={categoryCounts}
+                className="border-0 shadow-none bg-transparent"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-card/40 overflow-y-auto">
+          <div className="p-3 sticky top-0">
+            <CategoryFilterPanel
+              value={category}
+              onChange={setCategory}
+              counts={categoryCounts}
+              className="border-0 shadow-none bg-transparent w-full"
+            />
+          </div>
+        </aside>
       <div
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
       >
-        {viewMode === 'grid' ? (
+        {filteredApps.length === 0 ? (
+          tab === 'my-apps' ? (
+            <EmptyState
+              icon={<LayoutGrid className="h-12 w-12" />}
+              title="No apps connected"
+              description="Connect apps from the Marketplace to see them here"
+              action={{ label: 'Browse Marketplace', onClick: () => setTab('marketplace') }}
+            />
+          ) : (
+            <div className="py-12 text-center text-sm text-muted-foreground">No apps match your search</div>
+          )
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {filteredApps.map((app) => {
+            {filteredApps.map((app, index) => {
               const connected = app.isConnected;
               const isConnecting = connecting === app.id;
               return (
                 <div
-                  key={app.id}
+                  key={app.connectedAccountId ? `${app.id}-${app.connectedAccountId}` : `${app.id}-${index}`}
                   className={cn(
-                    'group flex flex-col items-center rounded-xl border p-4 transition-all cursor-pointer',
-                    connected ? 'border-green-200 bg-green-50/50' : 'border-[#e5e7eb] bg-white hover:border-[#d1d5db] hover:bg-[#f9fafb]'
+                    'group flex flex-col items-center rounded-xl border p-4 transition-all',
+                    connected
+                      ? 'border-green-500 bg-green-50 ring-2 ring-green-200/90 dark:bg-green-950/35 dark:ring-green-700/50'
+                      : 'border-border bg-card hover:border-brand/30 hover:bg-card-hover cursor-pointer'
                   )}
-                  onClick={() => !connected && handleConnect(app.id)}
+                  onClick={() => {
+                    if (app.authorizeUnsupported) {
+                      addToast(
+                        'This app does not support browser connection. It may still work from chat.',
+                        'info'
+                      );
+                      return;
+                    }
+                    if (!connected) handleConnect(app.id);
+                  }}
                 >
                   <AppIcon appId={app.id} className="h-14 w-14 mb-3" showCheck={connected} logo={app.logo || undefined} />
-                  <span className="text-sm font-medium text-[#0a0a0a] text-center">{app.name}</span>
+                  <span className="text-sm font-medium text-foreground text-center">{app.name}</span>
+                  {connected && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">
+                      Connected
+                    </span>
+                  )}
                   {app.tools_count > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-[#9ca3af] mt-1">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                       <Wrench className="h-3 w-3" /> {app.tools_count}
                     </span>
                   )}
@@ -372,7 +522,7 @@ export default function AppsPageClient() {
                           <Link
                             href={`/apps/${app.id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-xs font-medium text-[#0a0a0a] hover:underline"
+                            className="text-xs font-medium text-foreground hover:underline"
                           >
                             Manage
                           </Link>
@@ -381,18 +531,18 @@ export default function AppsPageClient() {
                               e.stopPropagation();
                               handleDisconnect(app.id, app.connectedAccountId);
                             }}
-                            className="text-xs text-[#9ca3af] hover:text-red-600"
+                            className="text-xs text-muted-foreground hover:text-red-600"
                           >
                             Disconnect
                           </button>
                         </div>
                       </>
                     ) : isConnecting ? (
-                      <span className="flex items-center gap-1 text-xs text-[#9ca3af]">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" /> Connecting...
                       </span>
                     ) : (
-                      <span className="text-xs text-[#9ca3af]">Tap to connect</span>
+                      <span className="text-xs text-muted-foreground">Click to connect</span>
                     )}
                   </div>
                 </div>
@@ -401,26 +551,37 @@ export default function AppsPageClient() {
           </div>
         ) : (
           <div className="space-y-1">
-            {filteredApps.map((app) => {
+            {filteredApps.map((app, index) => {
               const connected = app.isConnected;
               const isConnecting = connecting === app.id;
               return (
                 <div
-                  key={app.id}
+                  key={app.connectedAccountId ? `${app.id}-${app.connectedAccountId}` : `${app.id}-${index}`}
                   className={cn(
-                    'flex items-center justify-between rounded-xl border px-4 py-3 transition-all cursor-pointer',
-                    connected ? 'border-green-200 bg-green-50/50' : 'border-[#e5e7eb] bg-white hover:border-[#d1d5db] hover:bg-[#f9fafb]'
+                    'flex items-center justify-between rounded-xl border px-4 py-3 transition-all',
+                    connected
+                      ? 'border-green-500 bg-green-50 ring-2 ring-green-200/90 dark:bg-green-950/35 dark:ring-green-700/50'
+                      : 'border-border bg-card hover:border-brand/30 hover:bg-card-hover cursor-pointer'
                   )}
-                  onClick={() => !connected && handleConnect(app.id)}
+                  onClick={() => {
+                    if (app.authorizeUnsupported) {
+                      addToast(
+                        'This app does not support browser connection. It may still work from chat.',
+                        'info'
+                      );
+                      return;
+                    }
+                    if (!connected) handleConnect(app.id);
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <AppIcon appId={app.id} className="h-10 w-10" showCheck={connected} logo={app.logo || undefined} />
                     <div>
-                      <p className="text-sm font-medium text-[#0a0a0a]">{app.name}</p>
-                      <p className="text-xs text-[#9ca3af]">{app.description}</p>
+                      <p className="text-sm font-medium text-foreground">{app.name}</p>
+                      <p className="text-xs text-muted-foreground">{app.description}</p>
                     </div>
                     {app.tools_count > 0 && (
-                      <span className="flex items-center gap-1 text-xs text-[#9ca3af] shrink-0">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
                         <Wrench className="h-3 w-3" /> {app.tools_count}
                       </span>
                     )}
@@ -431,7 +592,7 @@ export default function AppsPageClient() {
                         <Link
                           href={`/apps/${app.id}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1.5 rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-xs font-medium text-[#0a0a0a] hover:bg-[#f9fafb]"
+                          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-card-hover"
                         >
                           <Settings className="h-3 w-3" /> Manage
                         </Link>
@@ -440,13 +601,13 @@ export default function AppsPageClient() {
                             e.stopPropagation();
                             handleDisconnect(app.id, app.connectedAccountId);
                           }}
-                          className="text-xs text-[#9ca3af] hover:text-red-600"
+                          className="text-xs text-muted-foreground hover:text-red-600"
                         >
                           Disconnect
                         </button>
                       </>
                     ) : isConnecting ? (
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#f3f4f6] px-3 py-1 text-xs text-[#9ca3af]">
+                      <span className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" /> Connecting...
                       </span>
                     ) : (
@@ -455,7 +616,7 @@ export default function AppsPageClient() {
                           e.stopPropagation();
                           handleConnect(app.id);
                         }}
-                        className="flex items-center gap-1.5 rounded-lg bg-[#0a0a0a] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1a1a1a]"
+                        className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" /> Connect
                       </button>
@@ -468,9 +629,10 @@ export default function AppsPageClient() {
         )}
         {loadingMore && (
           <div className="flex justify-center py-6">
-            <Loader2 className="h-6 w-6 animate-spin text-[#9ca3af]" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         )}
+      </div>
       </div>
     </div>
   );

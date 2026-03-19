@@ -45,13 +45,13 @@ export default function WorkflowsPageClient() {
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="border-b border-[#e5e7eb] px-4 sm:px-6 py-3 sm:py-4">
+      <div className="border-b border-border px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
-          <button className="flex items-center gap-2 rounded-lg bg-[#f3f4f6] px-4 py-2 text-sm font-medium text-[#0a0a0a] active:bg-[#e5e7eb] hover:bg-[#e5e7eb] transition-colors">
+          <button className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground active:bg-border hover:bg-border transition-colors">
             <Plus className="h-4 w-4" />
             Create workflow
           </button>
-          <span className="text-sm text-[#6b7280]">{active.length} active</span>
+          <span className="text-sm text-muted-foreground">{active.length} active</span>
         </div>
       </div>
 
@@ -59,7 +59,7 @@ export default function WorkflowsPageClient() {
       <div className="px-4 sm:px-6 py-5 sm:py-6 space-y-6">
         {/* Active Workflows */}
         <div>
-          <h3 className="text-sm font-medium text-[#6b7280] mb-3">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">
             Active workflows
             {active.length > 0 && (
               <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
@@ -68,16 +68,16 @@ export default function WorkflowsPageClient() {
             )}
           </h3>
           {active.length === 0 ? (
-            <div className="flex items-center justify-between rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-5 sm:px-6 py-6 sm:py-8">
-              <p className="text-sm text-[#9ca3af]">No active workflows</p>
-              <ArrowRight className="h-5 w-5 text-[#d1d5db]" />
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-5 sm:px-6 py-6 sm:py-8">
+              <p className="text-sm text-muted-foreground">No active workflows</p>
+              <ArrowRight className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : (
             <div className="space-y-2">
               {active.map((workflow) => (
                 <div
                   key={workflow.id}
-                  className="flex items-center justify-between rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 hover:bg-[#f9fafb] transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 hover:bg-card-hover transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={cn(
@@ -85,8 +85,8 @@ export default function WorkflowsPageClient() {
                       workflow.status === 'running' ? 'bg-blue-400 animate-pulse' : 'bg-green-400'
                     )} />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#0a0a0a] truncate">{workflow.name}</p>
-                      <div className="flex items-center gap-3 text-xs text-[#9ca3af] mt-0.5">
+                      <p className="text-sm font-medium text-foreground truncate">{workflow.name}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {formatSchedule(workflow)}
@@ -96,16 +96,16 @@ export default function WorkflowsPageClient() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0 ml-3">
-                    <span className="text-xs text-[#9ca3af] mr-2">{formatLastRun(workflow.lastRun)}</span>
+                    <span className="text-xs text-muted-foreground mr-2">{formatLastRun(workflow.lastRun)}</span>
                     <button
                       onClick={() => pauseWorkflow(workflow.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#0a0a0a]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                       <Pause className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => deleteWorkflow(workflow.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-red-50 hover:text-red-500"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -119,7 +119,7 @@ export default function WorkflowsPageClient() {
         {/* Paused */}
         {paused.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-[#6b7280] mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">
               Paused
               <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{paused.length}</span>
             </h3>
@@ -127,25 +127,25 @@ export default function WorkflowsPageClient() {
               {paused.map((workflow) => (
                 <div
                   key={workflow.id}
-                  className="flex items-center justify-between rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 opacity-70"
+                  className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3 opacity-70"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="h-2.5 w-2.5 rounded-full bg-amber-400 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#0a0a0a] truncate">{workflow.name}</p>
-                      <p className="text-xs text-[#9ca3af] mt-0.5">{formatSchedule(workflow)}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{workflow.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{formatSchedule(workflow)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => resumeWorkflow(workflow.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-green-50 hover:text-green-600"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-50 hover:text-green-600"
                     >
                       <Play className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => deleteWorkflow(workflow.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-red-50 hover:text-red-500"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -159,7 +159,7 @@ export default function WorkflowsPageClient() {
         {/* Completed */}
         {completed.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-[#6b7280] mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">
               Completed
               <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{completed.length}</span>
             </h3>
@@ -167,18 +167,18 @@ export default function WorkflowsPageClient() {
               {completed.map((workflow) => (
                 <div
                   key={workflow.id}
-                  className="flex items-center justify-between rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-4 py-3"
+                  className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm text-[#6b7280] truncate line-through">{workflow.name}</p>
-                      <p className="text-xs text-[#d1d5db] mt-0.5">Completed {formatLastRun(workflow.completedAt)}</p>
+                      <p className="text-sm text-muted-foreground truncate line-through">{workflow.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Completed {formatLastRun(workflow.completedAt)}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => deleteWorkflow(workflow.id)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-[#d1d5db] hover:bg-red-50 hover:text-red-500"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

@@ -12,10 +12,10 @@ npm run build             # production build
 ## Architecture
 
 - **Next.js 16 App Router** with TypeScript
-- **Clerk** for auth (middleware protects `/chat`, `/apps`, `/workflows`, `/settings`)
+- **Clerk** for auth (middleware protects `/chat`, `/apps`, `/schedule`, `/settings`, `/use-jungor`)
 - **Prisma + Neon PostgreSQL** for persistence
-- **OpenRouter** for AI chat (free Nemotron model)
-- **Composio MCP** for 500+ app integrations
+- **AI Gateway** for AI chat (Vercel AI SDK)
+- **Composio** for 500+ app integrations
 
 ## Key Patterns
 
@@ -32,41 +32,30 @@ import { prisma } from '@/lib/db';
 const user = await prisma.user.findUnique({ where: { clerkId: userId } });
 ```
 
-### Composio SDK (v3)
+### Composio SDK
 ```typescript
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
 
-const composio = new Composio({ provider: new VercelProvider() });
+const composio = new Composio({ apiKey: COMPOSIO_API_KEY, provider: new VercelProvider() });
 const session = await composio.create(userId);  // userId = Clerk userId
 const tools = await session.tools();
-// Pass tools to streamText for chat
-// session.authorize(toolkit) for OAuth
-// composio.connectedAccounts.delete(id) for disconnect
 ```
 
-### AI Chat streaming
-```typescript
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { streamText } from 'ai';
-const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
-const result = streamText({ model: openrouter('nvidia/nemotron-3-super-120b-a12b:free'), messages });
-return result.toTextStreamResponse();
-```
+### AI Chat
+Uses `createGateway` from `ai` package with AI_GATEWAY_API_KEY. Models: gpt-5.4, claude-sonnet, etc.
 
 ## Environment Variables
 
-Required in `.env.local`:
-- `DATABASE_URL` — Neon PostgreSQL connection string
+- `DATABASE_URL` — Neon PostgreSQL
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` — Clerk auth
-- `OPENROUTER_API_KEY` — OpenRouter API key
-- `COMPOSIO_API_KEY` — Composio API key
-- `COMPOSIO_MCP_URL` — Composio MCP endpoint URL
+- `AI_GATEWAY_API_KEY` — Vercel AI Gateway
+- `COMPOSIO_API_KEY` — Composio
+- `COMPOSIO_MCP_URL` — Composio MCP (optional, for workflow engine)
+- `CRON_SECRET` — For Vercel Cron /api/cron/run
 
 ## Code Style
 
-- No `useEffect` for one-time init — use `useRef` to track initialization
-- Keep state local — only use Zustand for cross-component persistent state
 - shadcn/ui for all UI components
 - Orange accent color: `#f26522`
 - Mobile-first responsive design

@@ -11,7 +11,7 @@ export default function SignOutPage() {
   }, [signOut]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <p className="text-sm text-[#6b7280]">Saindo...</p>
     </div>
   );

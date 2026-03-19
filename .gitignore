@@ -12,3 +12,4 @@ nul.*
 con
 con.*
 .vercel
+*.tsbuildinfo

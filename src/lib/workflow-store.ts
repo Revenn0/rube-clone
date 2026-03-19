@@ -127,7 +127,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
     }),
     {
-      name: 'rube-workflows',
+      name: 'jungor-workflows',
     }
   )
 );

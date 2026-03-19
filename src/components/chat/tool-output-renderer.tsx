@@ -62,7 +62,7 @@ export function ToolOutputRenderer({ output, toolName, className }: ToolOutputRe
         return <ToolOutputRenderer output={parsed} toolName={toolName} />;
       } catch {
         return (
-          <pre className="text-xs bg-white rounded-lg p-3 border border-[#e5e7eb] overflow-x-auto max-h-60 overflow-y-auto whitespace-pre-wrap">
+          <pre className="text-xs bg-card rounded-lg p-3 border border-border overflow-x-auto max-h-60 overflow-y-auto whitespace-pre-wrap">
             {output}
           </pre>
         );
@@ -111,7 +111,7 @@ export function ToolOutputRenderer({ output, toolName, className }: ToolOutputRe
             <div className="h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
@@ -125,34 +125,34 @@ export function ToolOutputRenderer({ output, toolName, className }: ToolOutputRe
 
       // Table
       return (
-        <div className="overflow-x-auto rounded-lg border border-[#e5e7eb]">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="bg-[#f3f4f6]">
-                <th className="px-3 py-2 text-left text-xs font-medium text-[#6b7280] uppercase">#</th>
+              <tr className="bg-muted">
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">#</th>
                 {cols.map((col) => (
-                  <th key={col} className="px-3 py-2 text-left text-xs font-medium text-[#6b7280] uppercase">
+                  <th key={col} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                     {col.replace(/_/g, ' ')}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e5e7eb] bg-white">
+            <tbody className="divide-y divide-border bg-card">
               {output.map((row, i) => (
-                <tr key={i} className="hover:bg-[#f9fafb]">
-                  <td className="px-3 py-2 text-[#6b7280]">{i + 1}</td>
+                <tr key={i} className="hover:bg-muted/50">
+                  <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                   {cols.map((col) => {
                     const val = row[col];
                     const isRead = typeof val === 'string' && val.toLowerCase() === 'read';
                     const isUnread = typeof val === 'string' && val.toLowerCase() === 'unread';
                     return (
-                      <td key={col} className="px-3 py-2 text-[#0a0a0a]">
+                      <td key={col} className="px-3 py-2 text-foreground">
                         {isRead || isUnread ? (
                           <span className="flex items-center gap-1.5">
                             {isUnread ? (
                               <Circle className="h-3 w-3 fill-red-500 text-red-500" />
                             ) : (
-                              <Check className="h-3 w-3 text-[#6b7280]" />
+                              <Check className="h-3 w-3 text-muted-foreground" />
                             )}
                             {formatCellValue(val)}
                           </span>
@@ -188,7 +188,7 @@ export function ToolOutputRenderer({ output, toolName, className }: ToolOutputRe
 
     // Fallback: JSON
     return (
-      <pre className="text-xs bg-white rounded-lg p-3 border border-[#e5e7eb] overflow-x-auto max-h-60 overflow-y-auto">
+      <pre className="text-xs bg-card rounded-lg p-3 border border-border overflow-x-auto max-h-60 overflow-y-auto">
         {JSON.stringify(output, null, 2)}
       </pre>
     );
