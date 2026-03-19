@@ -11,10 +11,10 @@ import LivePreviewPanel from '@/components/chat/live-preview-panel';
 import { MarkdownRenderer } from '@/components/chat/markdown-renderer';
 
 const SUGGESTIONS = [
-  { icon: '📧', text: 'List my last 10 emails' },
-  { icon: '📅', text: 'Check my calendar for today' },
-  { icon: '🐙', text: 'Show my GitHub repos' },
-  { icon: '💬', text: 'Send a Slack message' },
+  { icon: '📧', text: 'List my last 10 emails', desc: 'Gmail · Outlook' },
+  { icon: '📅', text: 'Check my calendar for today', desc: 'Google Calendar' },
+  { icon: '🐙', text: 'Show my GitHub repos', desc: 'GitHub' },
+  { icon: '💬', text: 'Send a Slack message', desc: 'Slack' },
 ];
 
 function extractConnectLinks(text: string): Array<{ app: string; url: string }> {
@@ -313,22 +313,31 @@ export function ChatInterface() {
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
       >
         {messages.length === 0 && !isLoading ? (
-          <div className="flex h-full flex-col items-center justify-center px-5 sm:px-6">
-            <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-2 text-center">
-              How can I help you today?
+          <div className="flex h-full flex-col items-center justify-center px-5 sm:px-6 py-8">
+            <div className="flex items-center justify-center h-12 w-12 rounded-2xl mb-5" style={{ background: 'linear-gradient(135deg, #f26522 0%, #ff8a50 100%)', boxShadow: '0 8px 24px rgba(242,101,34,0.3)' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M12 2L13.8 8.2L20 10L13.8 11.8L12 18L10.2 11.8L4 10L10.2 8.2L12 2Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground mb-2 text-center tracking-tight">
+              What can I do for you?
             </h1>
-            <p className="text-sm text-muted-foreground mb-6 text-center">
-              Connect apps, automate workflows, get things done
+            <p className="text-sm text-muted-foreground mb-8 text-center max-w-xs">
+              Connect your apps and automate anything in natural language
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 w-full max-w-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
               {SUGGESTIONS.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => handleSuggestion(s.text)}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 sm:p-4 text-left text-sm text-foreground active:bg-muted hover:bg-card-hover transition-colors"
+                  className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 text-left transition-all hover:border-brand/30 hover:shadow-md active:scale-[0.98]"
+                  style={{ boxShadow: 'var(--shadow-xs)' }}
                 >
-                  <span className="text-lg shrink-0">{s.icon}</span>
-                  <span className="leading-snug">{s.text}</span>
+                  <span className="text-xl shrink-0 mt-0.5">{s.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground leading-snug">{s.text}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
+                  </div>
                 </button>
               ))}
             </div>
@@ -354,21 +363,25 @@ export function ChatInterface() {
                 <div
                   className={cn(
                     'chat-message flex gap-2.5 sm:gap-3',
-                    message.role === 'user' ? 'justify-end' : ''
+                    message.role === 'user' ? 'justify-end' : 'items-start'
                   )}
                 >
                   {message.role === 'assistant' && (
-                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center mt-0.5">
-                      <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand" />
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5" style={{ background: 'linear-gradient(135deg, #f26522 0%, #ff8a50 100%)', boxShadow: '0 2px 8px rgba(242,101,34,0.3)' }}>
+                      <Bot className="h-3.5 w-3.5 text-white" />
                     </div>
                   )}
                   <div
                     className={cn(
-                      'max-w-[85%] sm:max-w-[80%] rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 text-sm leading-relaxed',
+                      'max-w-[85%] sm:max-w-[78%] text-sm leading-relaxed',
                       message.role === 'user'
-                        ? 'bg-foreground text-white'
-                        : 'bg-muted text-foreground'
+                        ? 'rounded-2xl rounded-tr-sm px-4 py-2.5 text-white'
+                        : 'py-1'
                     )}
+                    style={message.role === 'user' ? {
+                      background: 'linear-gradient(135deg, #f26522 0%, #e55a1d 100%)',
+                      boxShadow: '0 2px 12px rgba(242,101,34,0.25)'
+                    } : undefined}
                   >
                     {message.parts
                       .filter((p) => p.type === 'text')
@@ -395,7 +408,7 @@ export function ChatInterface() {
                                         document.cookie = `jungor_pendingSession=${sessionId}; path=/; max-age=300`;
                                       }
                                     }}
-                                    className="flex items-center gap-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover w-fit"
+                                    className="btn-brand flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white w-fit"
                                   >
                                     <ExternalLink className="h-3 w-3" /> Connect {link.app}
                                   </a>
@@ -407,8 +420,8 @@ export function ChatInterface() {
                       })}
                   </div>
                   {message.role === 'user' && (
-                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center mt-0.5">
-                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted mt-0.5 border border-border">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -485,12 +498,14 @@ export function ChatInterface() {
               </div>
             )}
             {isLoading && (
-              <div className="chat-message flex gap-2.5 sm:gap-3">
-                <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center">
-                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand animate-spin" />
+              <div className="chat-message flex gap-2.5 sm:gap-3 items-start">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, #f26522 0%, #ff8a50 100%)', boxShadow: '0 2px 8px rgba(242,101,34,0.3)' }}>
+                  <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
                 </div>
-                <div className="rounded-2xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
-                  Thinking...
+                <div className="flex items-center gap-1.5 py-2">
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             )}
@@ -510,12 +525,12 @@ export function ChatInterface() {
         </button>
       )}
 
-      <div className="border-t border-border bg-background safe-area-bottom shrink-0">
+      <div className="border-t border-border bg-background/80 backdrop-blur-sm safe-area-bottom shrink-0">
         <form onSubmit={handleSubmit} className="mx-auto max-w-2xl px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-border bg-card px-2.5 sm:px-3 py-2 focus-within:border-brand/40 focus-within:shadow-sm transition-all">
+          <div className="flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-border bg-card px-2.5 sm:px-3 py-2 transition-all focus-within:border-brand/50 focus-within:ring-2 focus-within:ring-brand/10" style={{ boxShadow: 'var(--shadow-sm)' }}>
             <button
               type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
               title="Attach"
             >
               <Paperclip className="h-4 w-4" />
@@ -523,7 +538,7 @@ export function ChatInterface() {
             <button
               type="button"
               onClick={() => handleSuggestion('Hey Jungor, help me create a new automation')}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted shrink-0"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
               title="Create Automation"
             >
               <Wand2 className="h-4 w-4" />
@@ -539,11 +554,15 @@ export function ChatInterface() {
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-white disabled:opacity-40 transition-colors shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-white disabled:opacity-40 transition-all shrink-0"
+              style={{ background: input.trim() ? 'linear-gradient(135deg, #f26522 0%, #e55a1d 100%)' : undefined, backgroundColor: !input.trim() ? 'var(--muted)' : undefined }}
             >
               <ArrowUp className="h-4 w-4" />
             </button>
           </div>
+          <p className="text-center text-[11px] text-muted-foreground/50 mt-2">
+            Jungor can make mistakes. Verify important results.
+          </p>
         </form>
       </div>
       </div>

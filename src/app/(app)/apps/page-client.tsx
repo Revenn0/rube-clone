@@ -479,7 +479,7 @@ export default function AppsPageClient() {
             <div className="py-12 text-center text-sm text-muted-foreground">No apps match your search</div>
           )
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {filteredApps.map((app, index) => {
               const connected = app.isConnected;
               const isConnecting = connecting === app.id;
@@ -487,62 +487,57 @@ export default function AppsPageClient() {
                 <div
                   key={app.connectedAccountId ? `${app.id}-${app.connectedAccountId}` : `${app.id}-${index}`}
                   className={cn(
-                    'group flex flex-col items-center rounded-xl border p-4 transition-all',
+                    'app-card group flex flex-col items-center rounded-xl border p-4 transition-all cursor-pointer',
                     connected
-                      ? 'border-green-500 bg-green-50 ring-2 ring-green-200/90 dark:bg-green-950/35 dark:ring-green-700/50'
-                      : 'border-border bg-card hover:border-brand/30 hover:bg-card-hover cursor-pointer'
+                      ? 'border-green-400/60 bg-green-50/80 dark:bg-green-950/30 dark:border-green-700/50'
+                      : 'border-border bg-card hover:border-brand/30'
                   )}
+                  style={connected ? { boxShadow: '0 0 0 2px rgba(34,197,94,0.2)' } : { boxShadow: 'var(--shadow-xs)' }}
                   onClick={() => {
                     if (app.authorizeUnsupported) {
-                      addToast(
-                        'This app does not support browser connection. It may still work from chat.',
-                        'info'
-                      );
+                      addToast('This app does not support browser connection. It may still work from chat.', 'info');
                       return;
                     }
                     if (!connected) handleConnect(app.id);
                   }}
                 >
                   <AppIcon appId={app.id} className="h-14 w-14 mb-3" showCheck={connected} logo={app.logo || undefined} />
-                  <span className="text-sm font-medium text-foreground text-center">{app.name}</span>
-                  {connected && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">
-                      Connected
+                  <span className="text-sm font-semibold text-foreground text-center leading-tight">{app.name}</span>
+                  {connected ? (
+                    <span className="mt-1 text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400">
+                      ● Connected
                     </span>
-                  )}
-                  {app.tools_count > 0 && (
+                  ) : app.tools_count > 0 ? (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <Wrench className="h-3 w-3" /> {app.tools_count}
+                      <Wrench className="h-3 w-3" /> {app.tools_count} tools
                     </span>
-                  )}
-                  <div className="mt-2 flex flex-col items-center gap-1">
+                  ) : null}
+                  <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
                     {connected ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/apps/${app.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs font-medium text-foreground hover:underline"
-                          >
-                            Manage
-                          </Link>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDisconnect(app.id, app.connectedAccountId);
-                            }}
-                            className="text-xs text-muted-foreground hover:text-red-600"
-                          >
-                            Disconnect
-                          </button>
-                        </div>
-                      </>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/apps/${app.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs font-medium text-foreground hover:text-brand transition-colors"
+                        >
+                          Manage
+                        </Link>
+                        <span className="text-muted-foreground/40">·</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDisconnect(app.id, app.connectedAccountId); }}
+                          className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
+                        >
+                          Disconnect
+                        </button>
+                      </div>
                     ) : isConnecting ? (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5 text-xs text-brand font-medium">
                         <Loader2 className="h-3 w-3 animate-spin" /> Connecting...
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Click to connect</span>
+                      <span className="text-xs text-muted-foreground/70 group-hover:text-brand transition-colors">
+                        Click to connect
+                      </span>
                     )}
                   </div>
                 </div>
